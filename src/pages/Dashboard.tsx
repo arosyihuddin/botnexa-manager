@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Home, BarChart3, Settings, Users, MessageSquare, BrainCircuit, Calendar, Bell, 
-  LogOut, Search, User, Menu, X, CheckCircle2
+  LogOut, Search, User, Menu, X, CheckCircle2, ChevronRight
 } from "lucide-react";
 import QRScanner from "@/components/QRScanner";
 import ChatHistory from "@/components/ChatHistory";
@@ -73,13 +72,13 @@ const Dashboard = () => {
               
               <SidebarContent className="px-2 py-2">
                 <nav className="space-y-1">
-                  <NavItem icon={<Home />} label="Dashboard" active />
-                  <NavItem icon={<MessageSquare />} label="Conversations" />
-                  <NavItem icon={<BrainCircuit />} label="AI Settings" />
-                  <NavItem icon={<Calendar />} label="Reminders" />
-                  <NavItem icon={<Users />} label="Contacts" />
-                  <NavItem icon={<BarChart3 />} label="Analytics" />
-                  <NavItem icon={<Settings />} label="Settings" />
+                  <NavItem icon={<Home />} label="Dashboard" active={location.pathname === '/dashboard'} to="/dashboard" />
+                  <NavItem icon={<MessageSquare />} label="Conversations" to="#" />
+                  <NavItem icon={<BrainCircuit />} label="AI Settings" to="/features" active={location.pathname === '/features'} />
+                  <NavItem icon={<Calendar />} label="Reminders" to="#" />
+                  <NavItem icon={<Users />} label="Contacts" to="#" />
+                  <NavItem icon={<BarChart3 />} label="Analytics" to="#" />
+                  <NavItem icon={<Settings />} label="Settings" to="#" />
                 </nav>
               </SidebarContent>
               
@@ -183,6 +182,8 @@ const ConnectionSetup = () => {
 };
 
 const ConnectedDashboard = () => {
+  const navigate = useNavigate();
+  
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -288,6 +289,23 @@ const ConnectedDashboard = () => {
               </CardContent>
             </Card>
           </div>
+          
+          <div className="mt-4">
+            <Card className="hover:bg-secondary/50 transition-colors cursor-pointer" onClick={() => navigate('/features')}>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-botnexa-100 h-10 w-10 rounded-full flex items-center justify-center">
+                    <BrainCircuit className="h-5 w-5 text-botnexa-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Explore More Features</h3>
+                    <p className="text-sm text-muted-foreground">Configure AI Agent, RAG, and Reminders</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         
         <TabsContent value="analytics">
@@ -364,21 +382,27 @@ interface NavItemProps {
   icon: React.ReactNode;
   label: string;
   active?: boolean;
+  to: string;
 }
 
-const NavItem = ({ icon, label, active }: NavItemProps) => (
-  <button
-    className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-      active
-        ? "bg-botnexa-50 text-botnexa-700"
-        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-    }`}
-  >
-    {icon}
-    <span>{label}</span>
-    {active && <div className="ml-auto w-1 h-4 bg-botnexa-500 rounded-full" />}
-  </button>
-);
+const NavItem = ({ icon, label, active, to }: NavItemProps) => {
+  const navigate = useNavigate();
+  
+  return (
+    <button
+      className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+        active
+          ? "bg-botnexa-50 text-botnexa-700"
+          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+      }`}
+      onClick={() => to && navigate(to)}
+    >
+      {icon}
+      <span>{label}</span>
+      {active && <div className="ml-auto w-1 h-4 bg-botnexa-500 rounded-full" />}
+    </button>
+  );
+};
 
 interface MetricCardProps {
   title: string;

@@ -49,31 +49,34 @@ const QRScanner = () => {
             </p>
             
             <div className="relative mx-auto w-64 h-64 flex items-center justify-center">
-              {/* QR Code */}
-              <div className="w-full h-full p-4 border-2 border-botnexa-500 rounded-lg relative animate-pulse-subtle">
+              {/* QR Code - Fixed size constraints */}
+              <div className="w-full h-full p-4 border-2 border-botnexa-500 rounded-lg relative">
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=botnexa-connect-${qrRefreshCounter}`} 
                   alt="WhatsApp QR Code"
                   className="w-full h-full object-contain"
                 />
                 
-                {/* Scanning animation */}
+                {/* Scanning animation with adjusted positioning */}
                 <div className="absolute left-0 top-0 w-full h-full pointer-events-none">
                   <div className="absolute inset-0 z-10 flex items-center justify-center">
-                    <div className="absolute w-full h-0.5 bg-botnexa-400/50 animate-[scan_2s_ease-in-out_infinite]">
+                    <div className="absolute w-full h-0.5 bg-botnexa-400/50 animate-scan">
                       <div className="absolute left-0 top-0 h-0.5 w-full bg-gradient-to-r from-transparent via-botnexa-500 to-transparent"></div>
                     </div>
                   </div>
                 </div>
               </div>
               
-              {/* Style for the scanning animation */}
+              {/* Style for the scanning animation - Fixed with proper syntax */}
               <style>
                 {`
                   @keyframes scan {
                     0% { transform: translateY(0); }
                     50% { transform: translateY(256px); }
                     100% { transform: translateY(0); }
+                  }
+                  .animate-scan {
+                    animation: scan 2s ease-in-out infinite;
                   }
                 `}
               </style>
