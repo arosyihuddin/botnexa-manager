@@ -56,7 +56,7 @@ const Navbar = () => {
             <NavLink to="/" active={isActive("/")}>
               Home
             </NavLink>
-            <NavLink to="/features" active={isActive("/features")}>
+            <NavLink to="#features" active={isActive("/features")}>
               Features
             </NavLink>
             <NavLink to="/pricing" active={isActive("/pricing")}>

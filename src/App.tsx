@@ -15,32 +15,35 @@ import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import Contacts from "./pages/Contacts";
 import NotFound from "./pages/NotFound";
+import { Suspense } from "react";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/ai-settings" element={<AISettings />} />
-          <Route path="/conversations" element={<Conversations />} />
-          <Route path="/reminders" element={<Reminders />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/contacts" element={<Contacts />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/" element={<Suspense fallback={<div>Loading...</div>}><Index /></Suspense>} />
+          <Route path="/login" element={<Suspense fallback={<div>Loading...</div>}><Login /></Suspense>} />
+          <Route path="/register" element={<Suspense fallback={<div>Loading...</div>}><Register /></Suspense>} />
+          <Route path="/dashboard" element={<Suspense fallback={<div>Loading...</div>}><Dashboard /></Suspense>} />
+          <Route path="/ai-settings" element={<Suspense fallback={<div>Loading...</div>}><AISettings /></Suspense>} />
+          <Route path="/conversations" element={<Suspense fallback={<div>Loading...</div>}><Conversations /></Suspense>} />
+          <Route path="/reminders" element={<Suspense fallback={<div>Loading...</div>}><Reminders /></Suspense>} />
+          <Route path="/analytics" element={<Suspense fallback={<div>Loading...</div>}><Analytics /></Suspense>} />
+          <Route path="/settings" element={<Suspense fallback={<div>Loading...</div>}><Settings /></Suspense>} />
+          <Route path="/contacts" element={<Suspense fallback={<div>Loading...</div>}><Contacts /></Suspense>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
+
+};
 
 export default App;
