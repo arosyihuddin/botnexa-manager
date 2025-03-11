@@ -8,7 +8,12 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import Features from "./pages/Features";
+import AISettings from "./pages/AISettings";
+import Conversations from "./pages/Conversations";
+import Reminders from "./pages/Reminders";
+import Analytics from "./pages/Analytics";
+import Settings from "./pages/Settings";
+import Contacts from "./pages/Contacts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,7 +29,12 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/features" element={<Features />} />
+          <Route path="/ai-settings" element={<AISettings />} />
+          <Route path="/conversations" element={<Conversations />} />
+          <Route path="/reminders" element={<Reminders />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/contacts" element={<Contacts />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
