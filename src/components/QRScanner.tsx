@@ -5,11 +5,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScanLine, QrCode, RefreshCw } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const QRScanner = () => {
   const [pairingCode, setPairingCode] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [qrRefreshCounter, setQrRefreshCounter] = useState(0);
+  const isMobile = useIsMobile();
 
   // Simulate QR code refresh
   useEffect(() => {
@@ -33,6 +35,8 @@ const QRScanner = () => {
     setQrRefreshCounter((prev) => prev + 1);
   };
 
+  const qrSize = isMobile ? "w-full max-w-[250px]" : "w-64";
+
   return (
     <Card className="w-full max-w-md mx-auto overflow-hidden">
       <Tabs defaultValue="scan" className="w-full">
@@ -41,18 +45,18 @@ const QRScanner = () => {
           <TabsTrigger value="pair" onClick={() => setIsScanning(false)}>Pairing Code</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="scan" className="p-6">
+        <TabsContent value="scan" className="p-4 sm:p-6">
           <div className="text-center space-y-4">
             <div className="text-lg font-medium">Scan the QR code with WhatsApp</div>
             <p className="text-sm text-muted-foreground pb-2">
               Open WhatsApp on your phone, tap Menu or Settings and select WhatsApp Web
             </p>
             
-            <div className="relative mx-auto w-64 h-64 flex items-center justify-center">
-              {/* QR Code - Fixed size constraints */}
-              <div className="w-full h-full p-4 border-2 border-botnexa-500 rounded-lg relative">
+            <div className="relative mx-auto flex items-center justify-center">
+              {/* QR Code with responsive size */}
+              <div className={`${qrSize} h-auto aspect-square p-4 border-2 border-botnexa-500 rounded-lg relative`}>
                 <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=botnexa-connect-${qrRefreshCounter}`} 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=botnexa-connect-${qrRefreshCounter}`} 
                   alt="WhatsApp QR Code"
                   className="w-full h-full object-contain"
                 />
@@ -72,7 +76,7 @@ const QRScanner = () => {
                 {`
                   @keyframes scan {
                     0% { transform: translateY(0); }
-                    50% { transform: translateY(256px); }
+                    50% { transform: translateY(100%); }
                     100% { transform: translateY(0); }
                   }
                   .animate-scan {
@@ -100,7 +104,7 @@ const QRScanner = () => {
           </div>
         </TabsContent>
         
-        <TabsContent value="pair" className="p-6">
+        <TabsContent value="pair" className="p-4 sm:p-6">
           <div className="text-center space-y-4">
             <div className="text-lg font-medium">Connect with pairing code</div>
             <p className="text-sm text-muted-foreground pb-2">

@@ -137,7 +137,7 @@ const Dashboard = () => {
               </header>
               
               {/* Content */}
-              <main className="flex-1 overflow-auto p-4 md:p-6">
+              <main className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
                 {isConnected ? (
                   <ConnectedDashboard />
                 ) : (
@@ -155,16 +155,16 @@ const Dashboard = () => {
 const ConnectionSetup = () => {
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold mb-2">Connect Your WhatsApp</h1>
-        <p className="text-muted-foreground">
+      <div className="text-center mb-6 md:mb-8">
+        <h1 className="text-xl md:text-2xl font-bold mb-2">Connect Your WhatsApp</h1>
+        <p className="text-muted-foreground text-sm md:text-base">
           To start using BotNexa, connect your WhatsApp account by scanning the QR code or entering a pairing code.
         </p>
       </div>
       
       <QRScanner />
       
-      <div className="mt-8 text-center text-sm text-muted-foreground">
+      <div className="mt-6 md:mt-8 text-center text-xs sm:text-sm text-muted-foreground">
         <p>
           Having trouble connecting? Check our{" "}
           <a href="#" className="text-botnexa-600 hover:text-botnexa-700 transition-colors">
