@@ -11,6 +11,7 @@ interface ScrollRevealOptions {
   scale?: number;
   cleanup?: boolean;
   easing?: string;
+  interval?: number;
 }
 
 export const useScrollReveal = (
@@ -46,6 +47,7 @@ export const useScrollReveal = (
           easing: mergedOptions.easing,
           opacity: mergedOptions.opacity,
           scale: mergedOptions.scale,
+          interval: mergedOptions.interval,
         });
 
         sr.reveal(selector);

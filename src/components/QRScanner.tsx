@@ -68,13 +68,15 @@ const QRScanner = () => {
               </div>
               
               {/* Style for the scanning animation */}
-              <style jsx>{`
-                @keyframes scan {
-                  0% { transform: translateY(0); }
-                  50% { transform: translateY(256px); }
-                  100% { transform: translateY(0); }
-                }
-              `}</style>
+              <style>
+                {`
+                  @keyframes scan {
+                    0% { transform: translateY(0); }
+                    50% { transform: translateY(256px); }
+                    100% { transform: translateY(0); }
+                  }
+                `}
+              </style>
             </div>
             
             <div className="flex justify-center pt-2">
