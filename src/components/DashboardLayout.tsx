@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarTrigger } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/lib/animations";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -145,6 +146,8 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
                     />
                   </div>
                   
+                  <ThemeToggle />
+                  
                   <Button variant="ghost" size="icon" className="relative">
                     <Bell className="h-5 w-5" />
                     <span className="absolute top-1 right-1 w-2 h-2 bg-botnexa-500 rounded-full"></span>
@@ -174,11 +177,8 @@ interface NavItemProps {
   label: string;
   active?: boolean;
   to: string;
-  className?: string; // Added className to allow passing custom styles
+  className?: string;
 }
-
-
-
 
 const NavItem = ({ icon, label, active, to }: NavItemProps) => {
   const navigate = useNavigate();
