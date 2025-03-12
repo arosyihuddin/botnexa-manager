@@ -1,9 +1,9 @@
 import { CheckCircle2, MessageCircle, BrainCircuit, Calendar } from "lucide-react";
 const Features = () => {
-  return <section id="features" className="py-16 md:py-24 bg-slate-900">
+  return <section id="features" className="py-16 md:py-24 bg-slate-900 dark:bg-black">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="heading-lg mb-4">
+          <h2 className="heading-lg mb-4 text-white">
             Powerful Features for WhatsApp Bot Management
           </h2>
           <p className="text-lg text-muted-foreground">
@@ -35,8 +35,8 @@ const Features = () => {
 
         {/* Additional features */}
         <div className="mt-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          <div className="bg-gradient-to-br from-botnexa-50 to-white p-6 rounded-xl border border-botnexa-100">
-            <h3 className="font-semibold text-xl mb-4">Easy Integration</h3>
+          <div className="bg-gradient-to-br from-botnexa-50 to-white dark:from-botnexa-900/30 dark:to-botnexa-900/10 dark:bg-card p-6 rounded-xl border border-botnexa-100 dark:border-botnexa-800">
+            <h3 className="font-semibold text-xl mb-4 text-foreground">Easy Integration</h3>
             <ul className="space-y-3">
               <FeatureListItem>Simple QR code scanning</FeatureListItem>
               <FeatureListItem>Quick pairing with code</FeatureListItem>
@@ -44,8 +44,8 @@ const Features = () => {
             </ul>
           </div>
           
-          <div className="bg-gradient-to-br from-botnexa-50 to-white p-6 rounded-xl border border-botnexa-100">
-            <h3 className="font-semibold text-xl mb-4">Intuitive Dashboard</h3>
+          <div className="bg-gradient-to-br from-botnexa-50 to-white dark:from-botnexa-900/30 dark:to-botnexa-900/10 dark:bg-card p-6 rounded-xl border border-botnexa-100 dark:border-botnexa-800">
+            <h3 className="font-semibold text-xl mb-4 text-foreground">Intuitive Dashboard</h3>
             <ul className="space-y-3">
               <FeatureListItem>Clean, modern interface</FeatureListItem>
               <FeatureListItem>Real-time chat monitoring</FeatureListItem>
@@ -53,8 +53,8 @@ const Features = () => {
             </ul>
           </div>
           
-          <div className="bg-gradient-to-br from-botnexa-50 to-white p-6 rounded-xl border border-botnexa-100">
-            <h3 className="font-semibold text-xl mb-4">Advanced Analytics</h3>
+          <div className="bg-gradient-to-br from-botnexa-50 to-white dark:from-botnexa-900/30 dark:to-botnexa-900/10 dark:bg-card p-6 rounded-xl border border-botnexa-100 dark:border-botnexa-800">
+            <h3 className="font-semibold text-xl mb-4 text-foreground">Advanced Analytics</h3>
             <ul className="space-y-3">
               <FeatureListItem>Conversation metrics</FeatureListItem>
               <FeatureListItem>User engagement tracking</FeatureListItem>
@@ -76,12 +76,12 @@ const FeatureItem = ({
   description
 }: FeatureItemProps) => <div className="flex gap-5">
     <div className="flex-shrink-0 mt-1">
-      <div className="w-12 h-12 rounded-full bg-botnexa-50 flex items-center justify-center">
+      <div className="w-12 h-12 rounded-full bg-botnexa-50 dark:bg-botnexa-900/40 flex items-center justify-center">
         {icon}
       </div>
     </div>
     <div>
-      <h3 className="text-xl font-semibold mb-2">{title}</h3>
+      <h3 className="text-xl font-semibold mb-2 text-white">{title}</h3>
       <p className="text-muted-foreground">{description}</p>
     </div>
   </div>;
@@ -91,6 +91,6 @@ const FeatureListItem = ({
   children: React.ReactNode;
 }) => <li className="flex items-start gap-2">
     <CheckCircle2 className="h-5 w-5 text-botnexa-500 flex-shrink-0 mt-0.5" />
-    <span>{children}</span>
+    <span className="text-foreground">{children}</span>
   </li>;
 export default Features;

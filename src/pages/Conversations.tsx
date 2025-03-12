@@ -1,6 +1,5 @@
-
 import { useState, useRef, useEffect } from "react";
-import { Search, Plus, Filter, MessageSquare, User, MoreVertical, ArrowUpRight, Send, Archive, Bell, BellOff, Pin, CheckCircle, Star, LogOut } from "lucide-react";
+import { Search, Plus, Filter, MessageSquare, User, MoreVertical, ArrowUpRight, Send, Archive, Bell, BellOff, Pin, CheckCircle, Star, LogOut, Check, Copy, ArrowRight, Trash, Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +15,7 @@ interface Message {
   id: string;
   content: string;
   sender: 'user' | 'contact';
+  senderName?: string; // For group chats
   timestamp: string;
   status?: 'sent' | 'delivered' | 'read';
 }
@@ -51,6 +51,7 @@ const Conversations = () => {
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState<{x: number, y: number, chatId: string} | null>(null);
+  const [messageMenuPosition, setMessageMenuPosition] = useState<{x: number, y: number, chatId: string, messageId: string} | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   
@@ -163,16 +164,50 @@ const Conversations = () => {
         { id: "3", name: "Michael Brown", avatar: "https://i.pravatar.cc/150?u=3" },
       ],
       messages: [
-        { id: "6-1", content: "Hey team, I have some ideas for our new marketing campaign", sender: 'contact', timestamp: "Yesterday", status: 'read' },
+        { id: "6-1", content: "Hey team, I have some ideas for our new marketing campaign", sender: 'contact', senderName: "John Smith", timestamp: "Yesterday", status: 'read' },
         { id: "6-2", content: "Sounds great! When can we discuss?", sender: 'user', timestamp: "Yesterday", status: 'read' },
-        { id: "6-3", content: "How about tomorrow at 10AM?", sender: 'contact', timestamp: "4h ago", status: 'delivered' },
-        { id: "6-4", content: "I'll prepare some materials", sender: 'contact', timestamp: "4h ago", status: 'delivered' },
-        { id: "6-5", content: "Let's discuss the new campaign", sender: 'contact', timestamp: "4h ago", status: 'delivered' },
+        { id: "6-3", content: "How about tomorrow at 10AM?", sender: 'contact', senderName: "Sarah Johnson", timestamp: "4h ago", status: 'delivered' },
+        { id: "6-4", content: "I'll prepare some materials", sender: 'contact', senderName: "Michael Brown", timestamp: "4h ago", status: 'delivered' },
+        { id: "6-5", content: "Let's discuss the new campaign", sender: 'contact', senderName: "John Smith", timestamp: "4h ago", status: 'delivered' },
+      ]
+    },
+    { 
+      id: "7", 
+      name: "Support Group", 
+      lastMessage: "Can someone help with this client?", 
+      time: "5h ago", 
+      unread: 2,
+      isGroup: true,
+      isArchived: false,
+      isMuted: false,
+      isPinned: false,
+      isFavorite: true,
+      participants: [
+        { id: "1", name: "John Smith", avatar: "https://i.pravatar.cc/150?u=1" },
+        { id: "4", name: "Emily Davis", avatar: "https://i.pravatar.cc/150?u=4" },
+        { id: "5", name: "David Wilson", avatar: "https://i.pravatar.cc/150?u=5" },
+      ],
+      messages: [
+        { id: "7-1", content: "We have a client with an urgent issue", sender: 'contact', senderName: "Emily Davis", timestamp: "Yesterday", status: 'read' },
+        { id: "7-2", content: "What's the problem?", sender: 'user', timestamp: "Yesterday", status: 'read' },
+        { id: "7-3", content: "They can't access their account", sender: 'contact', senderName: "Emily Davis", timestamp: "5h ago", status: 'delivered' },
+        { id: "7-4", content: "Can someone help with this client?", sender: 'contact', senderName: "David Wilson", timestamp: "5h ago", status: 'delivered' },
       ]
     },
   ]);
   
-  const filteredChats = mockChats.filter(chat => {
+  // Sort chats with pinned ones at the top
+  const sortedChats = [...mockChats].sort((a, b) => {
+    // First sort by pinned status
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    
+    // Then sort by time (assuming we would parse the time strings)
+    // This is a simplified version just for demonstration
+    return a.time > b.time ? -1 : 1;
+  });
+  
+  const filteredChats = sortedChats.filter(chat => {
     // Apply search filter
     const matchesSearch = chat.name.toLowerCase().includes(searchQuery.toLowerCase());
     
@@ -180,6 +215,7 @@ const Conversations = () => {
     if (filterTab === 'all') return matchesSearch && !chat.isArchived;
     if (filterTab === 'unread') return matchesSearch && chat.unread > 0 && !chat.isArchived;
     if (filterTab === 'archived') return matchesSearch && chat.isArchived;
+    if (filterTab === 'groups') return matchesSearch && chat.isGroup && !chat.isArchived;
     
     return matchesSearch;
   });
@@ -195,6 +231,7 @@ const Conversations = () => {
     // Close context menu when clicking outside
     const handleClickOutside = () => {
       setContextMenuPosition(null);
+      setMessageMenuPosition(null);
     };
     document.addEventListener('click', handleClickOutside);
     return () => {
@@ -226,7 +263,26 @@ const Conversations = () => {
       return chat;
     });
     
-    setMockChats(updatedChats);
+    // Re-sort the list to move the chat with the new message to the top (but below pinned chats)
+    const chatToMove = updatedChats.find(c => c.id === selectedChat);
+    if (chatToMove) {
+      const otherChats = updatedChats.filter(c => c.id !== selectedChat);
+      
+      // Separate pinned and unpinned chats
+      const pinnedChats = otherChats.filter(c => c.isPinned);
+      const unpinnedChats = otherChats.filter(c => !c.isPinned);
+      
+      // If the chat we're moving is pinned, keep it with pinned chats
+      if (chatToMove.isPinned) {
+        setMockChats([...pinnedChats, chatToMove, ...unpinnedChats]);
+      } else {
+        // Otherwise, put it at the top of unpinned chats
+        setMockChats([...pinnedChats, chatToMove, ...unpinnedChats]);
+      }
+    } else {
+      setMockChats(updatedChats);
+    }
+    
     setMessageInput('');
   };
 
@@ -250,6 +306,17 @@ const Conversations = () => {
     });
   };
 
+  const handleMessageContextMenu = (e: React.MouseEvent, chatId: string, messageId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMessageMenuPosition({
+      x: e.clientX,
+      y: e.clientY,
+      chatId,
+      messageId
+    });
+  };
+
   const handleContextMenuAction = (action: string) => {
     if (!contextMenuPosition) return;
     
@@ -269,6 +336,9 @@ const Conversations = () => {
               return { ...chat, unread: chat.unread === 0 ? 1 : chat.unread };
             case 'favorite':
               return { ...chat, isFavorite: !chat.isFavorite };
+            case 'delete':
+              // Remove the chat
+              return { ...chat };
             case 'leaveGroup':
               // In a real app, this would involve an API call
               console.log('Leave group:', chatId);
@@ -281,7 +351,54 @@ const Conversations = () => {
       })
     );
     
+    // For delete action, remove the chat from the list
+    if (action === 'delete') {
+      setMockChats(prev => prev.filter(chat => chat.id !== chatId));
+      if (selectedChat === chatId) {
+        setSelectedChat(null);
+      }
+    }
+    
     setContextMenuPosition(null);
+  };
+
+  const handleMessageAction = (action: string) => {
+    if (!messageMenuPosition) return;
+    
+    const { chatId, messageId } = messageMenuPosition;
+    
+    // Implement message actions
+    switch (action) {
+      case 'reply':
+        console.log('Reply to message:', messageId);
+        break;
+      case 'copy':
+        const message = mockChats
+          .find(c => c.id === chatId)
+          ?.messages.find(m => m.id === messageId);
+        if (message) {
+          navigator.clipboard.writeText(message.content);
+        }
+        break;
+      case 'forward':
+        console.log('Forward message:', messageId);
+        break;
+      case 'delete':
+        setMockChats(prev => 
+          prev.map(chat => {
+            if (chat.id === chatId) {
+              return {
+                ...chat,
+                messages: chat.messages.filter(m => m.id !== messageId)
+              };
+            }
+            return chat;
+          })
+        );
+        break;
+    }
+    
+    setMessageMenuPosition(null);
   };
 
   const selectedChatData = mockChats.find(c => c.id === selectedChat);
@@ -302,9 +419,6 @@ const Conversations = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Button size="icon" variant="outline" className="shrink-0">
-                <Filter className="h-4 w-4" />
-              </Button>
               <Button 
                 size="icon" 
                 className="shrink-0 bg-botnexa-500 hover:bg-botnexa-600"
@@ -318,6 +432,7 @@ const Conversations = () => {
               <TabsList className="w-full">
                 <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
                 <TabsTrigger value="unread" className="flex-1">Unread</TabsTrigger>
+                <TabsTrigger value="groups" className="flex-1">Groups</TabsTrigger>
                 <TabsTrigger value="archived" className="flex-1">Archived</TabsTrigger>
               </TabsList>
             </Tabs>
@@ -354,13 +469,30 @@ const Conversations = () => {
                           <span className="text-xs text-muted-foreground">{chat.time}</span>
                         </div>
                       </div>
-                      <p className={`text-sm text-muted-foreground truncate ${chat.unread > 0 ? "text-foreground font-medium" : ""}`}>{chat.lastMessage}</p>
+                      <div className="flex justify-between items-center">
+                        <p className={`text-sm text-muted-foreground truncate ${chat.unread > 0 ? "text-foreground font-medium" : ""}`}>
+                          {chat.lastMessage}
+                        </p>
+                        <div className="flex items-center ml-1">
+                          {chat.messages.length > 0 && chat.messages[chat.messages.length - 1].sender === 'user' && (
+                            <>
+                              {chat.messages[chat.messages.length - 1].status === 'read' ? (
+                                <Check className="h-3 w-3 text-botnexa-500" />
+                              ) : chat.messages[chat.messages.length - 1].status === 'delivered' ? (
+                                <Check className="h-3 w-3 text-muted-foreground" />
+                              ) : (
+                                <Check className="h-3 w-3 text-muted-foreground/50" />
+                              )}
+                            </>
+                          )}
+                          {chat.unread > 0 && (
+                            <Badge className="bg-botnexa-500 hover:bg-botnexa-600 rounded-full shrink-0 ml-1">
+                              {chat.unread}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    {chat.unread > 0 && (
-                      <Badge className="bg-botnexa-500 hover:bg-botnexa-600 rounded-full shrink-0">
-                        {chat.unread}
-                      </Badge>
-                    )}
                   </div>
                 </div>
               ))
@@ -421,6 +553,10 @@ const Conversations = () => {
                     <DropdownMenuItem onClick={() => handleContextMenuAction('favorite')}>
                       {selectedChatData?.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleContextMenuAction('delete')} className="text-destructive">
+                      Delete chat
+                    </DropdownMenuItem>
                     {selectedChatData?.isGroup && (
                       <DropdownMenuItem className="text-destructive" onClick={() => handleContextMenuAction('leaveGroup')}>
                         Leave Group
@@ -438,27 +574,64 @@ const Conversations = () => {
                   key={message.id} 
                   className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
+                  {message.sender === 'contact' && selectedChatData.isGroup && (
+                    <Avatar className="h-6 w-6 mr-2 mt-1">
+                      <AvatarImage src={`https://i.pravatar.cc/150?u=${selectedChatData.participants?.find(p => p.name === message.senderName)?.id || '0'}`} />
+                      <AvatarFallback>{message.senderName?.[0] || '?'}</AvatarFallback>
+                    </Avatar>
+                  )}
+                  
                   <div 
-                    className={`max-w-[75%] rounded-lg p-3 ${
+                    className={`max-w-[75%] rounded-lg p-3 group relative ${
                       message.sender === 'user' 
                         ? 'bg-botnexa-500 text-white' 
                         : 'bg-secondary'
                     }`}
+                    onContextMenu={(e) => handleMessageContextMenu(e, selectedChatData.id, message.id)}
                   >
+                    {selectedChatData.isGroup && message.sender === 'contact' && message.senderName && (
+                      <p className="text-xs font-medium text-botnexa-500 mb-1">{message.senderName}</p>
+                    )}
+                    
                     <p>{message.content}</p>
                     <div className={`flex items-center justify-end gap-1 mt-1 ${message.sender === 'user' ? 'text-white/70' : 'text-muted-foreground'}`}>
                       <span className="text-xs">{message.timestamp}</span>
                       {message.sender === 'user' && (
                         <span>
                           {message.status === 'read' ? (
-                            <CheckCircle className="h-3 w-3" />
+                            <div className="flex">
+                              <Check className="h-3 w-3 text-white" />
+                              <Check className="h-3 w-3 -ml-1 text-white" />
+                            </div>
                           ) : message.status === 'delivered' ? (
-                            <CheckCircle className="h-3 w-3 text-white/50" />
+                            <div className="flex">
+                              <Check className="h-3 w-3 text-white/70" />
+                              <Check className="h-3 w-3 -ml-1 text-white/70" />
+                            </div>
                           ) : (
-                            <CheckCircle className="h-3 w-3 text-white/30" />
+                            <Check className="h-3 w-3 text-white/50" />
                           )}
                         </span>
                       )}
+                    </div>
+                    
+                    {/* Hover menu button */}
+                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-6 w-6 rounded-full bg-background/10 hover:bg-background/20"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMessageContextMenu(
+                            e as unknown as React.MouseEvent, 
+                            selectedChatData.id, 
+                            message.id
+                          );
+                        }}
+                      >
+                        <MoreVertical className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -568,6 +741,13 @@ const Conversations = () => {
               <Star className="h-4 w-4" />
               {mockChats.find(c => c.id === contextMenuPosition.chatId)?.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             </button>
+            <button 
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted/50 rounded-sm"
+              onClick={() => handleContextMenuAction('delete')}
+            >
+              <Trash className="h-4 w-4" />
+              Delete chat
+            </button>
             {mockChats.find(c => c.id === contextMenuPosition.chatId)?.isGroup && (
               <button 
                 className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted/50 rounded-sm"
@@ -577,6 +757,49 @@ const Conversations = () => {
                 Leave group
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Message Context Menu */}
+      {messageMenuPosition && (
+        <div 
+          className="fixed bg-popover text-popover-foreground rounded-md shadow-md border border-border p-1 z-50"
+          style={{
+            top: messageMenuPosition.y,
+            left: messageMenuPosition.x,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="overflow-hidden" role="menu">
+            <button 
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 rounded-sm"
+              onClick={() => handleMessageAction('reply')}
+            >
+              <Reply className="h-4 w-4" />
+              Reply
+            </button>
+            <button 
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 rounded-sm"
+              onClick={() => handleMessageAction('copy')}
+            >
+              <Copy className="h-4 w-4" />
+              Copy
+            </button>
+            <button 
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 rounded-sm"
+              onClick={() => handleMessageAction('forward')}
+            >
+              <ArrowRight className="h-4 w-4" />
+              Forward
+            </button>
+            <button 
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted/50 rounded-sm"
+              onClick={() => handleMessageAction('delete')}
+            >
+              <Trash className="h-4 w-4" />
+              Delete
+            </button>
           </div>
         </div>
       )}
@@ -686,10 +909,7 @@ const Conversations = () => {
                 </div>
               )}
               
-              <div className="flex justify-between pt-4">
-                <Button variant="outline" onClick={() => setShowContactModal(false)}>
-                  Close
-                </Button>
+              <div className="flex justify-end pt-4">
                 <Button className="bg-botnexa-500 hover:bg-botnexa-600" onClick={() => setShowContactModal(false)}>
                   Message
                 </Button>

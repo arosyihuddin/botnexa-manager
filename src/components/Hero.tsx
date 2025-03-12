@@ -70,11 +70,11 @@ const FeatureCard = ({
   icon,
   title,
   description
-}: FeatureCardProps) => <div className="group p-6 bg-white rounded-xl shadow-sm border border-border transition-all duration-300 hover:shadow-md hover:border-botnexa-200 animate-fade-in">
-    <div className="rounded-full w-12 h-12 flex items-center justify-center bg-botnexa-50 group-hover:bg-botnexa-100 transition-colors mb-4">
+}: FeatureCardProps) => <div className="group p-6 bg-white dark:bg-card rounded-xl shadow-sm border border-border transition-all duration-300 hover:shadow-md hover:border-botnexa-200 animate-fade-in">
+    <div className="rounded-full w-12 h-12 flex items-center justify-center bg-botnexa-50 dark:bg-botnexa-900/30 group-hover:bg-botnexa-100 dark:group-hover:bg-botnexa-900/50 transition-colors mb-4">
       {icon}
     </div>
-    <h3 className="text-xl font-semibold mb-2 transition-colors text-blue-500">{title}</h3>
+    <h3 className="text-xl font-semibold mb-2 text-foreground transition-colors group-hover:text-botnexa-600 dark:group-hover:text-botnexa-400">{title}</h3>
     <p className="text-muted-foreground">{description}</p>
   </div>;
 export default Hero;

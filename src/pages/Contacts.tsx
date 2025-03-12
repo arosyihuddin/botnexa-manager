@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { User, Users, Search, Plus, MessageSquare, Phone, Mail, X, Info } from 'lucide-react';
+import { User, Users, Search, MessageSquare, Phone, Mail, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -14,7 +13,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose
 } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -71,20 +69,15 @@ const Contacts = () => {
       <div className="p-4 md:p-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <h1 className="text-2xl font-bold">Contacts</h1>
-          <Button className="bg-botnexa-500 hover:bg-botnexa-600 sm:w-auto w-full">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Contact
-          </Button>
-        </div>
-
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search contacts..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search contacts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
 
         <Card>
@@ -200,29 +193,23 @@ const Contacts = () => {
                   </div>
                 )}
               </div>
+              
+              <div className="flex justify-end pt-4">
+                <Button 
+                  className="bg-botnexa-500 hover:bg-botnexa-600"
+                  onClick={() => {
+                    if (selectedContact) {
+                      handleStartConversation(selectedContact.id);
+                    }
+                    setIsContactDetailsOpen(false);
+                  }}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Start Conversation
+                </Button>
+              </div>
             </div>
           )}
-          
-          <DialogFooter className="sm:justify-between">
-            <DialogClose asChild>
-              <Button variant="ghost" type="button">
-                <X className="h-4 w-4 mr-2" />
-                Close
-              </Button>
-            </DialogClose>
-            <Button 
-              className="bg-botnexa-500 hover:bg-botnexa-600"
-              onClick={() => {
-                if (selectedContact) {
-                  handleStartConversation(selectedContact.id);
-                }
-                setIsContactDetailsOpen(false);
-              }}
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Start Conversation
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
