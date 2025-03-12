@@ -36,6 +36,7 @@ const Navbar = () => {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -107,7 +108,7 @@ const Navbar = () => {
           isMobileMenuOpen ? "translate-y-0" : "-translate-y-full"
         )}
       >
-        <div className="bg-background/95 backdrop-blur-md shadow-md py-4 px-6 flex flex-col gap-3 border-b border-border">
+        <div className="bg-background/95 dark:bg-card/95 backdrop-blur-md shadow-md py-4 px-6 flex flex-col gap-3 border-b border-border">
           <MobileNavLink to="/" active={isActive("/")} onClick={() => {}}>
             Home
           </MobileNavLink>

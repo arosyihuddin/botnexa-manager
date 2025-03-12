@@ -193,6 +193,29 @@
   .dark .feature-icon {
     @apply bg-accent text-accent-foreground;
   }
+
+  /* Sidebar dark mode styles */
+  .dark .sidebar-item {
+    @apply hover:bg-accent text-foreground;
+  }
+
+  .dark .sidebar-item-active {
+    @apply bg-accent text-accent-foreground;
+  }
+
+  /* Settings tab dark mode styles */
+  .dark .settings-tab {
+    @apply hover:bg-accent data-[state=active]:bg-accent data-[state=active]:text-accent-foreground;
+  }
+
+  /* Personality component dark mode styles */
+  .dark .personality-option {
+    @apply bg-card border-border hover:bg-accent text-foreground;
+  }
+
+  .dark .personality-option-selected {
+    @apply bg-accent border-accent text-accent-foreground;
+  }
 }
 
 @layer utilities {

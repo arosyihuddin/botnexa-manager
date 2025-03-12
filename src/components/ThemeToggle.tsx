@@ -17,11 +17,15 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     return <div className={`w-9 h-9 ${className}`} />;
   }
 
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light");
+  };
+
   return (
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+      onClick={toggleTheme}
       className={className}
       aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
     >
