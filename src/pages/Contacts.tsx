@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { User, Users, Search, Plus } from 'lucide-react';
 
-const Contact = () => {
+const Contacts = () => {
   const [selectedTab, setSelectedTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -21,6 +21,11 @@ const Contact = () => {
   const filteredContacts = contacts.filter(contact => 
     contact.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const getFilteredContacts = (tabValue) => {
+    if (tabValue === 'all') return filteredContacts;
+    return filteredContacts.filter(c => c.type === (tabValue === 'contacts' ? 'contact' : 'group'));
+  };
 
   return (
     <DashboardLayout title="Contacts">
@@ -54,15 +59,39 @@ const Contact = () => {
             </Tabs>
           </CardHeader>
           <CardContent>
-            <TabsContent value="all">
-              <ContactList contacts={filteredContacts} />
-            </TabsContent>
-            <TabsContent value="contacts">
-              <ContactList contacts={filteredContacts.filter(c => c.type === 'contact')} />
-            </TabsContent>
-            <TabsContent value="groups">
-              <ContactList contacts={filteredContacts.filter(c => c.type === 'group')} />
-            </TabsContent>
+            <div className="space-y-2">
+              {getFilteredContacts(selectedTab).length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No contacts found
+                </div>
+              ) : (
+                getFilteredContacts(selectedTab).map(contact => (
+                  <div 
+                    key={contact.id} 
+                    className="p-4 rounded-lg border hover:bg-accent/50 transition-colors flex items-center justify-between group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-botnexa-100 flex items-center justify-center">
+                        {contact.type === 'contact' ? (
+                          <User className="h-5 w-5 text-botnexa-600" />
+                        ) : (
+                          <Users className="h-5 w-5 text-botnexa-600" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-medium">{contact.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {contact.type === 'contact' ? contact.email : `${contact.members} members`}
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100">
+                      View
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -70,42 +99,4 @@ const Contact = () => {
   );
 };
 
-const ContactList = ({ contacts }) => {
-  return (
-    <div className="space-y-2">
-      {contacts.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          No contacts found
-        </div>
-      ) : (
-        contacts.map(contact => (
-          <div 
-            key={contact.id} 
-            className="p-4 rounded-lg border hover:bg-accent/50 transition-colors flex items-center justify-between group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-botnexa-100 flex items-center justify-center">
-                {contact.type === 'contact' ? (
-                  <User className="h-5 w-5 text-botnexa-600" />
-                ) : (
-                  <Users className="h-5 w-5 text-botnexa-600" />
-                )}
-              </div>
-              <div>
-                <h3 className="font-medium">{contact.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {contact.type === 'contact' ? contact.email : `${contact.members} members`}
-                </p>
-              </div>
-            </div>
-            <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100">
-              View
-            </Button>
-          </div>
-        ))
-      )}
-    </div>
-  );
-};
-
-export default Contact;
+export default Contacts;

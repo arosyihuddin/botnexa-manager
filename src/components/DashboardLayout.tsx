@@ -1,8 +1,9 @@
+
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
   Home, BarChart3, Settings, Users, MessageSquare, BrainCircuit, Calendar, Bell, 
-  LogOut, Search, User, Menu, X
+  LogOut, Search, Menu, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -53,53 +54,46 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
               <SidebarContent className="px-2 py-2">
                 <nav className="flex flex-col space-y-2">
                   <NavItem 
-                    icon={<Home />} 
+                    icon={<Home className="h-5 w-5" />} 
                     label="Dashboard" 
                     active={location.pathname === '/dashboard'} 
                     to="/dashboard" 
-                    className="p-2 hover:bg-gray-100"
                   />
                   <NavItem 
-                    icon={<MessageSquare />} 
+                    icon={<MessageSquare className="h-5 w-5" />} 
                     label="Conversations" 
                     active={location.pathname === '/conversations'} 
                     to="/conversations" 
-                    className="p-2 hover:bg-gray-100"
                   />
                   <NavItem 
-                    icon={<BrainCircuit />} 
+                    icon={<BrainCircuit className="h-5 w-5" />} 
                     label="AI Settings" 
                     active={location.pathname === '/ai-settings'} 
                     to="/ai-settings" 
-                    className="p-2 hover:bg-gray-100"
                   />
                   <NavItem 
-                    icon={<Calendar />} 
+                    icon={<Calendar className="h-5 w-5" />} 
                     label="Reminders" 
                     active={location.pathname === '/reminders'} 
                     to="/reminders" 
-                    className="p-2 hover:bg-gray-100"
                   />
                   <NavItem 
-                    icon={<Users />} 
+                    icon={<Users className="h-5 w-5" />} 
                     label="Contacts" 
                     active={location.pathname === '/contacts'} 
                     to="/contacts" 
-                    className="p-2 hover:bg-gray-100"
                   />
                   <NavItem 
-                    icon={<BarChart3 />} 
+                    icon={<BarChart3 className="h-5 w-5" />} 
                     label="Analytics" 
                     active={location.pathname === '/analytics'} 
                     to="/analytics" 
-                    className="p-2 hover:bg-gray-100"
                   />
                   <NavItem 
-                    icon={<Settings />} 
+                    icon={<Settings className="h-5 w-5" />} 
                     label="Settings" 
                     active={location.pathname === '/settings'} 
                     to="/settings" 
-                    className="p-2 hover:bg-gray-100"
                   />
                 </nav>
               </SidebarContent>
@@ -177,7 +171,6 @@ interface NavItemProps {
   label: string;
   active?: boolean;
   to: string;
-  className?: string;
 }
 
 const NavItem = ({ icon, label, active, to }: NavItemProps) => {
@@ -187,7 +180,7 @@ const NavItem = ({ icon, label, active, to }: NavItemProps) => {
     <button
       className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
         active
-          ? "bg-botnexa-50 text-botnexa-700"
+          ? "bg-botnexa-50 text-botnexa-700 dark:bg-botnexa-950/20 dark:text-botnexa-300"
           : "text-muted-foreground hover:bg-secondary hover:text-foreground"
       }`}
       onClick={() => to && navigate(to)}

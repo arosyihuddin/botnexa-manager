@@ -28,7 +28,24 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+    () => {
+      try {
+        const storedTheme = localStorage.getItem(storageKey);
+        if (storedTheme === "dark" || storedTheme === "light") {
+          return storedTheme;
+        }
+        
+        // If no stored theme, check system preference
+        if (typeof window !== 'undefined') {
+          const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          return systemPrefersDark ? "dark" : defaultTheme;
+        }
+        
+        return defaultTheme;
+      } catch (error) {
+        return defaultTheme;
+      }
+    }
   );
 
   useEffect(() => {
