@@ -12,6 +12,7 @@ import { SidebarProvider, Sidebar, SidebarContent, SidebarFooter, SidebarHeader,
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/lib/animations";
 import { ThemeToggle } from "./ThemeToggle";
+import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -116,7 +117,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
             </Sidebar>
             
             {/* Main Content */}
-            <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 flex flex-col min-h-0 w-full">
               {/* Header */}
               <header className="h-14 border-b border-border flex items-center justify-between px-4">
                 <div className="flex items-center gap-4">
@@ -178,11 +179,12 @@ const NavItem = ({ icon, label, active, to }: NavItemProps) => {
   
   return (
     <button
-      className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+      className={cn(
+        "flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors",
         active
           ? "bg-botnexa-50 text-botnexa-700 dark:bg-botnexa-950/20 dark:text-botnexa-300"
           : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-      }`}
+      )}
       onClick={() => to && navigate(to)}
     >
       {icon}

@@ -31,6 +31,13 @@ const Navbar = () => {
     setIsMobileMenuOpen(false);
   }, [location]);
 
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <header
       className={cn(
@@ -54,14 +61,14 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
-            <NavLink to="/" active={isActive("/")}>
+            <NavLink to="/" active={isActive("/")} onClick={() => {}}>
               Home
             </NavLink>
-            <NavLink to="/#features" active={isActive("/#features")}>
+            <NavLink to="/#features" active={false} onClick={() => scrollToSection('features')}>
               Features
             </NavLink>
-            <NavLink to="/dashboard" active={isActive("/dashboard")}>
-              Dashboard
+            <NavLink to="/#pricing" active={false} onClick={() => scrollToSection('pricing')}>
+              Pricing
             </NavLink>
             <div className="ml-4 flex items-center gap-3">
               <ThemeToggle />
@@ -101,14 +108,14 @@ const Navbar = () => {
         )}
       >
         <div className="bg-background/95 backdrop-blur-md shadow-md py-4 px-6 flex flex-col gap-3 border-b border-border">
-          <MobileNavLink to="/" active={isActive("/")}>
+          <MobileNavLink to="/" active={isActive("/")} onClick={() => {}}>
             Home
           </MobileNavLink>
-          <MobileNavLink to="/#features" active={isActive("/#features")}>
+          <MobileNavLink to="/#features" active={false} onClick={() => scrollToSection('features')}>
             Features
           </MobileNavLink>
-          <MobileNavLink to="/dashboard" active={isActive("/dashboard")}>
-            Dashboard
+          <MobileNavLink to="/#pricing" active={false} onClick={() => scrollToSection('pricing')}>
+            Pricing
           </MobileNavLink>
           <div className="grid grid-cols-2 gap-3 mt-3">
             <Button asChild variant="outline" className="w-full">
@@ -128,37 +135,81 @@ interface NavLinkProps {
   to: string;
   active: boolean;
   children: React.ReactNode;
+  onClick: () => void;
 }
 
-const NavLink = ({ to, active, children }: NavLinkProps) => (
-  <Link
-    to={to}
-    className={cn(
-      "px-3 py-2 rounded-full text-sm font-medium transition-colors relative",
-      active
-        ? "text-botnexa-600"
-        : "text-foreground/80 hover:text-foreground hover:bg-secondary/80"
-    )}
-  >
-    {children}
-    {active && (
-      <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-botnexa-500 rounded-full" />
-    )}
-  </Link>
-);
+const NavLink = ({ to, active, children, onClick }: NavLinkProps) => {
+  const isHash = to.includes('#');
+  
+  if (isHash) {
+    return (
+      <button
+        onClick={onClick}
+        className={cn(
+          "px-3 py-2 rounded-full text-sm font-medium transition-colors relative",
+          active
+            ? "text-botnexa-600 dark:text-botnexa-400"
+            : "text-foreground/80 hover:text-foreground hover:bg-secondary/80"
+        )}
+      >
+        {children}
+        {active && (
+          <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-botnexa-500 rounded-full" />
+        )}
+      </button>
+    );
+  }
+  
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "px-3 py-2 rounded-full text-sm font-medium transition-colors relative",
+        active
+          ? "text-botnexa-600 dark:text-botnexa-400"
+          : "text-foreground/80 hover:text-foreground hover:bg-secondary/80"
+      )}
+    >
+      {children}
+      {active && (
+        <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-botnexa-500 rounded-full" />
+      )}
+    </Link>
+  );
+};
 
-const MobileNavLink = ({ to, active, children }: NavLinkProps) => (
-  <Link
-    to={to}
-    className={cn(
-      "py-2 px-3 rounded-md text-base font-medium transition-colors",
-      active
-        ? "bg-secondary text-botnexa-600"
-        : "text-foreground/80 hover:bg-secondary/50 hover:text-foreground"
-    )}
-  >
-    {children}
-  </Link>
-);
+const MobileNavLink = ({ to, active, children, onClick }: NavLinkProps) => {
+  const isHash = to.includes('#');
+  
+  if (isHash) {
+    return (
+      <button
+        onClick={onClick}
+        className={cn(
+          "py-2 px-3 rounded-md text-base font-medium transition-colors",
+          active
+            ? "bg-secondary text-botnexa-600 dark:text-botnexa-400"
+            : "text-foreground/80 hover:bg-secondary/50 hover:text-foreground"
+        )}
+      >
+        {children}
+      </button>
+    );
+  }
+  
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "py-2 px-3 rounded-md text-base font-medium transition-colors",
+        active
+          ? "bg-secondary text-botnexa-600 dark:text-botnexa-400"
+          : "text-foreground/80 hover:bg-secondary/50 hover:text-foreground"
+      )}
+    >
+      {children}
+    </Link>
+  );
+};
 
 export default Navbar;

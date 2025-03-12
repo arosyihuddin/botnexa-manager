@@ -51,7 +51,7 @@
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 11%;
+    --card: 222 42% 15%;
     --card-foreground: 210 40% 98%;
 
     --popover: 222 47% 11%;
@@ -179,6 +179,19 @@
 
   .responsive-flex {
     @apply flex flex-col sm:flex-row items-stretch sm:items-center;
+  }
+  
+  /* Dark mode specific components */
+  .dark .pricing-card {
+    @apply bg-card/90 border-border;
+  }
+  
+  .dark .feature-card {
+    @apply bg-card/90 border-border text-foreground;
+  }
+  
+  .dark .feature-icon {
+    @apply bg-accent text-accent-foreground;
   }
 }
 
