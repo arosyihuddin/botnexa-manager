@@ -1,6 +1,6 @@
 import { CheckCircle2, MessageCircle, BrainCircuit, Calendar } from "lucide-react";
 const Features = () => {
-  return <section id="features" className="py-16 md:py-24 bg-slate-900 dark:bg-black">
+  return <section id="features" className="py-16 md:py-24">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="heading-lg mb-4 text-white">
@@ -23,7 +23,7 @@ const Features = () => {
           <div className="order-1 md:order-2">
             <div className="relative">
               <div className="glass-card rounded-xl overflow-hidden shadow-lg relative z-10 transform md:rotate-y-2 backface-hidden animate-float">
-                <img src="https://assets-global.website-files.com/65ae0ddf548e5810e7112daf/65b43a7e29a9d2f6a7b24e9f_Home_Hero-p-1080.png" alt="BotNexa Features" className="w-full h-auto" />
+                <img src="/feature.png" alt="BotNexa Features" className="w-full h-auto" />
               </div>
               {/* Decorative elements */}
               <div className="absolute top-1/4 -left-8 w-16 h-16 bg-botnexa-100 rounded-full animate-float-slow"></div>

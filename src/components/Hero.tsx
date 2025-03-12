@@ -56,7 +56,7 @@ const Hero = () => {
       <div className="mt-16 md:mt-24 perspective-800">
         <div className="relative max-w-4xl mx-auto preserve-3d">
           <div className="glass-card rounded-xl overflow-hidden shadow-2xl premium-shadow transform rotate-x-2 backface-hidden animate-float">
-            <img src="https://miro.medium.com/v2/resize:fit:1400/1*aRYF9tvwQiEFt5K6AxJIXQ.png" alt="BotNexa Dashboard" className="w-full h-auto" />
+            <img src="/dashboard.png" alt="BotNexa Dashboard" className="w-full h-auto" />
           </div>
           <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] h-[20px] bg-black/10 blur-xl rounded-full"></div>
         </div>

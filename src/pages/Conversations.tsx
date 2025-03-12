@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from "react";
-import { Search, Plus, Filter, MessageSquare, User, MoreVertical, ArrowUpRight, Send, Archive, Bell, BellOff, Pin, CheckCircle, Star, LogOut, Check, Copy, ArrowRight, Trash, Reply } from "lucide-react";
+import { Search, Plus, Filter, MessageSquare, User, MoreVertical, ArrowUpRight, Send, Archive, Bell, BellOff, Pin, CheckCircle, Star, LogOut, Check, Copy, ArrowRight, Trash, Reply, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -388,13 +388,13 @@ const Conversations = () => {
         setReplyToMessage(messageId);
         break;
       case 'copy':
-        const message = mockChats
+        { const message = mockChats
           .find(c => c.id === chatId)
           ?.messages.find(m => m.id === messageId);
         if (message) {
           navigator.clipboard.writeText(message.content);
         }
-        break;
+        break; }
       case 'forward':
         setForwardMessageId(messageId);
         setShowForwardModal(true);
