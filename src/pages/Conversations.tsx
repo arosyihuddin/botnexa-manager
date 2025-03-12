@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Search, Plus, Filter, MessageSquare, User, MoreVertical, ArrowUpRight, Send, Archive, Bell, BellOff, Pin, CheckCircle, Star, LogOut, Check, Copy, ArrowRight, Trash, Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,8 @@ interface Message {
   senderName?: string; // For group chats
   timestamp: string;
   status?: 'sent' | 'delivered' | 'read';
+  replyTo?: string; // ID of the message being replied to
+  forwarded?: boolean; // Indicates if the message was forwarded
 }
 
 interface Contact {
@@ -50,8 +53,11 @@ const Conversations = () => {
   const [messageInput, setMessageInput] = useState('');
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [forwardMessageId, setForwardMessageId] = useState<string | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState<{x: number, y: number, chatId: string} | null>(null);
   const [messageMenuPosition, setMessageMenuPosition] = useState<{x: number, y: number, chatId: string, messageId: string} | null>(null);
+  const [replyToMessage, setReplyToMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   
@@ -214,8 +220,8 @@ const Conversations = () => {
     // Apply tab filter
     if (filterTab === 'all') return matchesSearch && !chat.isArchived;
     if (filterTab === 'unread') return matchesSearch && chat.unread > 0 && !chat.isArchived;
-    if (filterTab === 'archived') return matchesSearch && chat.isArchived;
     if (filterTab === 'groups') return matchesSearch && chat.isGroup && !chat.isArchived;
+    if (filterTab === 'archived') return matchesSearch && chat.isArchived;
     
     return matchesSearch;
   });
@@ -244,13 +250,21 @@ const Conversations = () => {
     
     const updatedChats = mockChats.map(chat => {
       if (chat.id === selectedChat) {
-        const newMessage = {
+        const newMessage: Message = {
           id: `${chat.id}-${chat.messages.length + 1}`,
           content: messageInput,
           sender: 'user' as const,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           status: 'sent' as const
         };
+        
+        // Add reply information if replying to a message
+        if (replyToMessage) {
+          const repliedMessage = chat.messages.find(m => m.id === replyToMessage);
+          if (repliedMessage) {
+            newMessage.replyTo = replyToMessage;
+          }
+        }
         
         // Update the chat with new message
         return {
@@ -284,6 +298,7 @@ const Conversations = () => {
     }
     
     setMessageInput('');
+    setReplyToMessage(null); // Clear reply after sending
   };
 
   const handleChatSelect = (chatId: string) => {
@@ -370,7 +385,7 @@ const Conversations = () => {
     // Implement message actions
     switch (action) {
       case 'reply':
-        console.log('Reply to message:', messageId);
+        setReplyToMessage(messageId);
         break;
       case 'copy':
         const message = mockChats
@@ -381,7 +396,8 @@ const Conversations = () => {
         }
         break;
       case 'forward':
-        console.log('Forward message:', messageId);
+        setForwardMessageId(messageId);
+        setShowForwardModal(true);
         break;
       case 'delete':
         setMockChats(prev => 
@@ -399,6 +415,60 @@ const Conversations = () => {
     }
     
     setMessageMenuPosition(null);
+  };
+
+  const handleForwardMessage = (targetChatId: string) => {
+    if (!forwardMessageId || !selectedChat) return;
+    
+    // Find the message to forward
+    const sourceChat = mockChats.find(c => c.id === selectedChat);
+    const messageToForward = sourceChat?.messages.find(m => m.id === forwardMessageId);
+    
+    if (!messageToForward) return;
+    
+    // Create a new forwarded message
+    const forwardedMessage: Message = {
+      id: `${targetChatId}-forward-${Date.now()}`,
+      content: messageToForward.content,
+      sender: 'user',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: 'sent',
+      forwarded: true
+    };
+    
+    // Add the message to the target chat
+    setMockChats(prev => 
+      prev.map(chat => {
+        if (chat.id === targetChatId) {
+          return {
+            ...chat,
+            messages: [...chat.messages, forwardedMessage],
+            lastMessage: messageToForward.content,
+            time: 'Just now'
+          };
+        }
+        return chat;
+      })
+    );
+    
+    setForwardMessageId(null);
+    setShowForwardModal(false);
+  };
+
+  const cancelReply = () => {
+    setReplyToMessage(null);
+  };
+
+  const getReplyMessage = () => {
+    if (!replyToMessage || !selectedChat) return null;
+    
+    const chat = mockChats.find(c => c.id === selectedChat);
+    return chat?.messages.find(m => m.id === replyToMessage);
+  };
+
+  const getMessageById = (chatId: string, messageId: string) => {
+    const chat = mockChats.find(c => c.id === chatId);
+    return chat?.messages.find(m => m.id === messageId);
   };
 
   const selectedChatData = mockChats.find(c => c.id === selectedChat);
@@ -477,9 +547,15 @@ const Conversations = () => {
                           {chat.messages.length > 0 && chat.messages[chat.messages.length - 1].sender === 'user' && (
                             <>
                               {chat.messages[chat.messages.length - 1].status === 'read' ? (
-                                <Check className="h-3 w-3 text-botnexa-500" />
+                                <div className="flex">
+                                  <Check className="h-3 w-3 text-botnexa-500" />
+                                  <Check className="h-3 w-3 -ml-1 text-botnexa-500" />
+                                </div>
                               ) : chat.messages[chat.messages.length - 1].status === 'delivered' ? (
-                                <Check className="h-3 w-3 text-muted-foreground" />
+                                <div className="flex">
+                                  <Check className="h-3 w-3 text-muted-foreground" />
+                                  <Check className="h-3 w-3 -ml-1 text-muted-foreground" />
+                                </div>
                               ) : (
                                 <Check className="h-3 w-3 text-muted-foreground/50" />
                               )}
@@ -569,78 +645,120 @@ const Conversations = () => {
             
             {/* Chat Messages */}
             <CardContent className="flex-1 p-4 overflow-y-auto space-y-4">
-              {selectedChatData?.messages.map((message) => (
-                <div 
-                  key={message.id} 
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {message.sender === 'contact' && selectedChatData.isGroup && (
-                    <Avatar className="h-6 w-6 mr-2 mt-1">
-                      <AvatarImage src={`https://i.pravatar.cc/150?u=${selectedChatData.participants?.find(p => p.name === message.senderName)?.id || '0'}`} />
-                      <AvatarFallback>{message.senderName?.[0] || '?'}</AvatarFallback>
-                    </Avatar>
-                  )}
-                  
+              {selectedChatData?.messages.map((message) => {
+                const repliedMessage = message.replyTo ? 
+                  selectedChatData.messages.find(m => m.id === message.replyTo) : null;
+                
+                return (
                   <div 
-                    className={`max-w-[75%] rounded-lg p-3 group relative ${
-                      message.sender === 'user' 
-                        ? 'bg-botnexa-500 text-white' 
-                        : 'bg-secondary'
-                    }`}
-                    onContextMenu={(e) => handleMessageContextMenu(e, selectedChatData.id, message.id)}
+                    key={message.id} 
+                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {selectedChatData.isGroup && message.sender === 'contact' && message.senderName && (
-                      <p className="text-xs font-medium text-botnexa-500 mb-1">{message.senderName}</p>
+                    {message.sender === 'contact' && selectedChatData.isGroup && (
+                      <Avatar className="h-6 w-6 mr-2 mt-1">
+                        <AvatarImage src={`https://i.pravatar.cc/150?u=${selectedChatData.participants?.find(p => p.name === message.senderName)?.id || '0'}`} />
+                        <AvatarFallback>{message.senderName?.[0] || '?'}</AvatarFallback>
+                      </Avatar>
                     )}
                     
-                    <p>{message.content}</p>
-                    <div className={`flex items-center justify-end gap-1 mt-1 ${message.sender === 'user' ? 'text-white/70' : 'text-muted-foreground'}`}>
-                      <span className="text-xs">{message.timestamp}</span>
-                      {message.sender === 'user' && (
-                        <span>
-                          {message.status === 'read' ? (
-                            <div className="flex">
-                              <Check className="h-3 w-3 text-white" />
-                              <Check className="h-3 w-3 -ml-1 text-white" />
-                            </div>
-                          ) : message.status === 'delivered' ? (
-                            <div className="flex">
-                              <Check className="h-3 w-3 text-white/70" />
-                              <Check className="h-3 w-3 -ml-1 text-white/70" />
-                            </div>
-                          ) : (
-                            <Check className="h-3 w-3 text-white/50" />
-                          )}
-                        </span>
+                    <div 
+                      className={`max-w-[75%] rounded-lg p-3 group relative ${
+                        message.sender === 'user' 
+                          ? 'bg-botnexa-500 text-white' 
+                          : 'bg-secondary'
+                      }`}
+                      onContextMenu={(e) => handleMessageContextMenu(e, selectedChatData.id, message.id)}
+                    >
+                      {selectedChatData.isGroup && message.sender === 'contact' && message.senderName && (
+                        <p className="text-xs font-medium text-botnexa-500 mb-1">{message.senderName}</p>
                       )}
-                    </div>
-                    
-                    {/* Hover menu button */}
-                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-6 w-6 rounded-full bg-background/10 hover:bg-background/20"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMessageContextMenu(
-                            e as unknown as React.MouseEvent, 
-                            selectedChatData.id, 
-                            message.id
-                          );
-                        }}
-                      >
-                        <MoreVertical className="h-3 w-3" />
-                      </Button>
+                      
+                      {/* Reply information */}
+                      {repliedMessage && (
+                        <div className={`rounded p-2 mb-2 text-sm ${
+                          message.sender === 'user' ? 'bg-botnexa-600/50' : 'bg-secondary/80 border-l-2 border-botnexa-400'
+                        }`}>
+                          <p className="font-medium text-xs">
+                            {repliedMessage.sender === 'user' ? 'You' : repliedMessage.senderName || selectedChatData.name}
+                          </p>
+                          <p className="truncate">{repliedMessage.content}</p>
+                        </div>
+                      )}
+                      
+                      {/* Forwarded indicator */}
+                      {message.forwarded && message.sender === 'contact' && (
+                        <p className="text-xs italic mb-1 text-muted-foreground">Forwarded</p>
+                      )}
+                      
+                      <p>{message.content}</p>
+                      <div className={`flex items-center justify-end gap-1 mt-1 ${message.sender === 'user' ? 'text-white/70' : 'text-muted-foreground'}`}>
+                        <span className="text-xs">{message.timestamp}</span>
+                        {message.sender === 'user' && (
+                          <span>
+                            {message.status === 'read' ? (
+                              <div className="flex">
+                                <Check className="h-3 w-3 text-white" />
+                                <Check className="h-3 w-3 -ml-1 text-white" />
+                              </div>
+                            ) : message.status === 'delivered' ? (
+                              <div className="flex">
+                                <Check className="h-3 w-3 text-white/70" />
+                                <Check className="h-3 w-3 -ml-1 text-white/70" />
+                              </div>
+                            ) : (
+                              <Check className="h-3 w-3 text-white/50" />
+                            )}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Hover menu button */}
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-6 w-6 rounded-full bg-background/10 hover:bg-background/20"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMessageContextMenu(
+                              e as unknown as React.MouseEvent, 
+                              selectedChatData.id, 
+                              message.id
+                            );
+                          }}
+                        >
+                          <MoreVertical className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div ref={messagesEndRef} />
             </CardContent>
             
             {/* Message Input */}
             <div className="p-3 border-t">
+              {/* Reply preview */}
+              {replyToMessage && (
+                <div className="mb-2 p-2 bg-muted/30 rounded-lg border-l-2 border-botnexa-500 flex justify-between items-center">
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-xs font-medium">
+                      Replying to {getReplyMessage()?.sender === 'user' ? 'yourself' : selectedChatData?.name}
+                    </p>
+                    <p className="text-sm truncate">{getReplyMessage()?.content}</p>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6"
+                    onClick={cancelReply}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              
               <form 
                 className="flex items-end gap-2"
                 onSubmit={(e) => {
@@ -806,7 +924,7 @@ const Conversations = () => {
 
       {/* New Chat Modal */}
       <Dialog open={showNewChatModal} onOpenChange={setShowNewChatModal}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>New Conversation</DialogTitle>
             <DialogDescription>
@@ -864,9 +982,48 @@ const Conversations = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Forward Message Modal */}
+      <Dialog open={showForwardModal} onOpenChange={setShowForwardModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Forward Message</DialogTitle>
+            <DialogDescription>
+              Select contacts to forward this message to
+            </DialogDescription>
+          </DialogHeader>
+          <div className="relative mb-4">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search contacts..." 
+              className="pl-8 w-full"
+            />
+          </div>
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {mockChats.map((chat) => (
+              <button
+                key={chat.id}
+                className="flex items-center gap-3 w-full p-2 rounded-md hover:bg-muted/50 text-left"
+                onClick={() => handleForwardMessage(chat.id)}
+              >
+                <Avatar>
+                  <AvatarImage src={`https://i.pravatar.cc/150?u=${chat.id}`} />
+                  <AvatarFallback>{chat.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{chat.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {chat.isGroup ? `${chat.participants?.length} participants` : "Contact"}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Contact Detail Modal */}
       <Dialog open={showContactModal} onOpenChange={setShowContactModal}>
-        <DialogContent>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Contact Information</DialogTitle>
           </DialogHeader>
@@ -908,12 +1065,6 @@ const Conversations = () => {
                   </div>
                 </div>
               )}
-              
-              <div className="flex justify-end pt-4">
-                <Button className="bg-botnexa-500 hover:bg-botnexa-600" onClick={() => setShowContactModal(false)}>
-                  Message
-                </Button>
-              </div>
             </div>
           )}
         </DialogContent>

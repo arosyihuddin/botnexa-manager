@@ -1,18 +1,20 @@
+
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowRight, MessageSquare, Bot, Zap } from "lucide-react";
+
 const Hero = () => {
   return <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
       {/* Background gradient */}
-      <div className="absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b from-botnexa-50/50 to-transparent -z-10" />
+      <div className="absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b from-botnexa-50/50 to-transparent dark:from-botnexa-950/30 dark:to-transparent -z-10" />
       
       {/* Decorative elements */}
-      <div className="absolute top-20 right-[10%] w-64 h-64 bg-botnexa-200/20 rounded-full blur-3xl -z-10" />
-      <div className="absolute top-40 left-[5%] w-72 h-72 bg-botnexa-100/30 rounded-full blur-3xl -z-10" />
+      <div className="absolute top-20 right-[10%] w-64 h-64 bg-botnexa-200/20 dark:bg-botnexa-800/20 rounded-full blur-3xl -z-10" />
+      <div className="absolute top-40 left-[5%] w-72 h-72 bg-botnexa-100/30 dark:bg-botnexa-900/30 rounded-full blur-3xl -z-10" />
       
       <div className="container mx-auto px-4 md:px-6">
         <div className="max-w-3xl mx-auto text-center space-y-6 animate-slide-up">
-          <div className="inline-flex items-center px-3 py-1 rounded-full bg-botnexa-100 border border-botnexa-200 text-botnexa-700 text-sm font-medium mb-4">
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-botnexa-100 border border-botnexa-200 text-botnexa-700 dark:bg-botnexa-900/50 dark:border-botnexa-800 dark:text-botnexa-300 text-sm font-medium mb-4">
             <span className="flex h-2 w-2 rounded-full bg-botnexa-500 mr-2"></span>
             Introducing BotNexa
           </div>
@@ -28,7 +30,7 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-            <Button asChild size="lg" className="bg-botnexa-500 hover:bg-botnexa-600 px-6 h-12">
+            <Button asChild size="lg" className="bg-botnexa-500 hover:bg-botnexa-600 px-6 h-12 text-white">
               <Link to="/register">
                 Get Started
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -61,20 +63,23 @@ const Hero = () => {
       </div>
     </section>;
 };
+
 interface FeatureCardProps {
   icon: React.ReactNode;
   title: string;
   description: string;
 }
+
 const FeatureCard = ({
   icon,
   title,
   description
-}: FeatureCardProps) => <div className="group p-6 bg-white dark:bg-card rounded-xl shadow-sm border border-border transition-all duration-300 hover:shadow-md hover:border-botnexa-200 animate-fade-in">
+}: FeatureCardProps) => <div className="group p-6 bg-white dark:bg-card rounded-xl shadow-sm border border-border transition-all duration-300 hover:shadow-md hover:border-botnexa-200 dark:hover:border-botnexa-700 animate-fade-in">
     <div className="rounded-full w-12 h-12 flex items-center justify-center bg-botnexa-50 dark:bg-botnexa-900/30 group-hover:bg-botnexa-100 dark:group-hover:bg-botnexa-900/50 transition-colors mb-4">
       {icon}
     </div>
     <h3 className="text-xl font-semibold mb-2 text-foreground transition-colors group-hover:text-botnexa-600 dark:group-hover:text-botnexa-400">{title}</h3>
     <p className="text-muted-foreground">{description}</p>
   </div>;
+
 export default Hero;
