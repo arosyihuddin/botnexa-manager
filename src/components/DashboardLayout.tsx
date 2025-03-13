@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
   Home, BarChart3, Settings, Users, MessageSquare, BrainCircuit, Calendar, Bell, 
-  LogOut, Search, Menu, X
+  LogOut, Search, Menu, X, Activity, Database, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,7 +32,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     <PageTransition>
       <div className="min-h-screen bg-background flex flex-col">
         <SidebarProvider>
-          <div className="flex min-h-screen">
+          <div className="flex min-h-screen w-full">
             {/* Sidebar */}
             <Sidebar className="border-r border-border">
               <SidebarHeader className="py-4 px-4 flex justify-between items-center">
@@ -89,6 +89,12 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
                     label="Analytics" 
                     active={location.pathname === '/analytics'} 
                     to="/analytics" 
+                  />
+                  <NavItem 
+                    icon={<Activity className="h-5 w-5" />} 
+                    label="Log Activity" 
+                    active={location.pathname === '/log-activity'} 
+                    to="/log-activity" 
                   />
                   <NavItem 
                     icon={<Settings className="h-5 w-5" />} 
