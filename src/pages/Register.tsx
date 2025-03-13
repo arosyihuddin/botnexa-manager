@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, UserIcon } from "lucide-react";
+import { EyeIcon, ArrowLeft, EyeOffIcon, LockIcon, MailIcon, UserIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageTransition } from "@/lib/animations";
 
@@ -60,11 +60,9 @@ const Register = () => {
     <PageTransition>
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-botnexa-50/50 to-background dark:from-botnexa-900/10 dark:to-background">
         <header className="py-4 px-6">
-          <Link to="/" className="flex items-center gap-2 transition-opacity duration-200 hover:opacity-80">
-            <div className="h-8 w-8 rounded-md bg-gradient-to-br from-botnexa-400 to-botnexa-600 flex items-center justify-center text-white font-bold text-lg">
-              B
-            </div>
-            <span className="font-bold text-xl">BotNexa</span>
+          <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to home
           </Link>
         </header>
         

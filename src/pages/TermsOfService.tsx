@@ -7,26 +7,17 @@ import { PageTransition } from "@/lib/animations";
 const TermsOfService = () => {
   return (
     <PageTransition>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-botnexa-50/50 to-background dark:from-botnexa-900/10 dark:to-background">
         <header className="py-4 px-6">
-          <Link to="/" className="flex items-center gap-2 transition-opacity duration-200 hover:opacity-80">
-            <div className="h-8 w-8 rounded-md bg-gradient-to-br from-botnexa-400 to-botnexa-600 flex items-center justify-center text-white font-bold text-lg">
-              B
-            </div>
-            <span className="font-bold text-xl">BotNexa</span>
+          <Link to="/register" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to register
           </Link>
         </header>
         
-        <main className="pt-8 pb-16">
+        <main className="pb-16">
           <div className="container mx-auto px-4 md:px-6 max-w-4xl">
             <div className="mb-8 mt-4">
-              <Link 
-                to="/register" 
-                className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to register
-              </Link>
               <h1 className="text-3xl font-bold mt-4 text-foreground">Terms of Service</h1>
               <p className="text-muted-foreground mt-2">Last updated: {new Date().toLocaleDateString()}</p>
             </div>
@@ -158,12 +149,6 @@ const TermsOfService = () => {
               <ul>
                 <li>By email: terms@botnexa.com</li>
               </ul>
-            </div>
-            
-            <div className="mt-12 flex justify-center">
-              <Button asChild>
-                <Link to="/privacy-policy">View Privacy Policy</Link>
-              </Button>
             </div>
           </div>
         </main>

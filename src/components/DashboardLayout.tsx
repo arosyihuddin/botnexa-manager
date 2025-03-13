@@ -58,12 +58,9 @@ const DashboardLayout = ({ children, title, showBackButton, onBack }: DashboardL
                   </div>
                   <span className="font-bold text-xl">BotNexa</span>
                 </div>
-                
                 {isMobile && (
-                  <SidebarTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <X className="h-5 w-5" />
-                    </Button>
+                  <SidebarTrigger>
+                    <Menu className="h-5 w-5" />
                   </SidebarTrigger>
                 )}
               </SidebarHeader>
@@ -144,10 +141,8 @@ const DashboardLayout = ({ children, title, showBackButton, onBack }: DashboardL
               <header className="h-14 border-b border-border flex items-center justify-between px-4 sticky top-0 bg-background/95 backdrop-blur-sm z-20">
                 <div className="flex items-center gap-4">
                   {isMobile && (
-                    <SidebarTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Menu className="h-5 w-5" />
-                      </Button>
+                    <SidebarTrigger>
+                      <X className="h-5 w-5" />
                     </SidebarTrigger>
                   )}
                   
