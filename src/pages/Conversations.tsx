@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -10,7 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { 
   Search, Send, Paperclip, Smile, ArrowLeft, Phone, Video, MoreVertical, 
-  Image, Mic, Plus
+  Image, Mic, Plus, MessageSquare
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
