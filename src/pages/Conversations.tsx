@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Textarea } from "@/components/ui/textarea";
 
 // Sample conversation data
 const conversations = [
@@ -135,7 +136,7 @@ const Conversations = () => {
       <div className="h-full flex-1 flex flex-col md:flex-row gap-4 overflow-hidden">
         {/* Conversation List - hide on mobile when a conversation is selected */}
         {(!isMobile || !selectedConversation) && (
-          <Card className="md:w-1/3 w-full flex flex-col">
+          <Card className="md:w-1/3 w-full flex flex-col h-full">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
                 <CardTitle>Chats</CardTitle>
