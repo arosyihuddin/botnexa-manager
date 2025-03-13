@@ -11,7 +11,12 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.includes(path);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -65,10 +70,10 @@ const Navbar = () => {
             <NavLink to="/" active={isActive("/")} onClick={() => {}}>
               Home
             </NavLink>
-            <NavLink to="/#features" active={false} onClick={() => scrollToSection('features')}>
+            <NavLink to="/#features" active={location.hash === "#features"} onClick={() => scrollToSection('features')}>
               Features
             </NavLink>
-            <NavLink to="/#pricing" active={false} onClick={() => scrollToSection('pricing')}>
+            <NavLink to="/#pricing" active={location.hash === "#pricing"} onClick={() => scrollToSection('pricing')}>
               Pricing
             </NavLink>
             <div className="ml-4 flex items-center gap-3">
@@ -117,10 +122,10 @@ const Navbar = () => {
           <MobileNavLink to="/" active={isActive("/")} onClick={() => {}}>
             Home
           </MobileNavLink>
-          <MobileNavLink to="/#features" active={false} onClick={() => scrollToSection('features')}>
+          <MobileNavLink to="/#features" active={location.hash === "#features"} onClick={() => scrollToSection('features')}>
             Features
           </MobileNavLink>
-          <MobileNavLink to="/#pricing" active={false} onClick={() => scrollToSection('pricing')}>
+          <MobileNavLink to="/#pricing" active={location.hash === "#pricing"} onClick={() => scrollToSection('pricing')}>
             Pricing
           </MobileNavLink>
           <div className="grid grid-cols-2 gap-3 mt-3">

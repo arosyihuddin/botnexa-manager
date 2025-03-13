@@ -3,23 +3,29 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { PageTransition } from "@/lib/animations";
-import Navbar from "@/components/Navbar";
 
 const PrivacyPolicy = () => {
   return (
     <PageTransition>
       <div className="min-h-screen bg-background">
-        <Navbar />
+        <header className="py-4 px-6">
+          <Link to="/" className="flex items-center gap-2 transition-opacity duration-200 hover:opacity-80">
+            <div className="h-8 w-8 rounded-md bg-gradient-to-br from-botnexa-400 to-botnexa-600 flex items-center justify-center text-white font-bold text-lg">
+              B
+            </div>
+            <span className="font-bold text-xl">BotNexa</span>
+          </Link>
+        </header>
         
-        <main className="pt-24 pb-16">
+        <main className="pt-8 pb-16">
           <div className="container mx-auto px-4 md:px-6 max-w-4xl">
-            <div className="mb-8 mt-8">
+            <div className="mb-8 mt-4">
               <Link 
-                to="/" 
+                to="/register" 
                 className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to home
+                Back to register
               </Link>
               <h1 className="text-3xl font-bold mt-4 text-foreground">Privacy Policy</h1>
               <p className="text-muted-foreground mt-2">Last updated: {new Date().toLocaleDateString()}</p>
