@@ -132,10 +132,10 @@ const Conversations = () => {
       showBackButton={isMobile && !!selectedConversation}
       onBack={handleBack}
     >
-      <div className="h-full flex-1 flex flex-col md:flex-row gap-4">
+      <div className="h-full flex-1 flex flex-col md:flex-row gap-4 overflow-hidden">
         {/* Conversation List - hide on mobile when a conversation is selected */}
         {(!isMobile || !selectedConversation) && (
-          <Card className="md:w-1/3 w-full">
+          <Card className="md:w-1/3 w-full flex flex-col">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
                 <CardTitle>Chats</CardTitle>
@@ -152,7 +152,7 @@ const Conversations = () => {
                 />
               </div>
             </CardHeader>
-            <CardContent className="h-[calc(100vh-18rem)] overflow-auto">
+            <CardContent className="flex-1 overflow-auto">
               <div className="space-y-2">
                 {conversations.map((conversation) => (
                   <div
@@ -191,7 +191,7 @@ const Conversations = () => {
 
         {/* Chat Detail - hide on mobile when no conversation is selected */}
         {(!isMobile || selectedConversation) && (
-          <Card className="flex-1 flex flex-col">
+          <Card className="flex-1 flex flex-col h-full">
             {selectedConversation ? (
               <>
                 <CardHeader className="border-b py-3 px-4">
@@ -225,7 +225,7 @@ const Conversations = () => {
                   </div>
                 </CardHeader>
 
-                <CardContent className="flex-1 overflow-auto p-4 h-[calc(100vh-26rem)]">
+                <CardContent className="flex-1 overflow-auto p-4">
                   <div className="space-y-4">
                     {messages.map((message) => (
                       <div
