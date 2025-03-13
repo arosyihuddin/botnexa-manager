@@ -26,7 +26,7 @@ const ForgotPassword = () => {
       toast({
         title: "Reset link sent",
         description: "Check your email for the password reset link",
-        variant: "success",
+        variant: "default",
       });
     } catch (error) {
       toast({
