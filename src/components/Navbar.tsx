@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Navbar = () => {
@@ -90,12 +90,17 @@ const Navbar = () => {
               size="icon"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label="Toggle menu"
+              className="relative"
             >
               {isMobileMenuOpen ? (
                 <X className="h-6 w-6" />
               ) : (
                 <Menu className="h-6 w-6" />
               )}
+              <ChevronDown className={cn(
+                "h-3 w-3 absolute -bottom-1 right-0 transition-transform duration-200",
+                isMobileMenuOpen ? "rotate-180" : "rotate-0"
+              )} />
             </Button>
           </div>
         </div>
