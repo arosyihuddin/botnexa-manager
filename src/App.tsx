@@ -11,6 +11,7 @@ import { whatsAppWebSocket } from "@/lib/websocket";
 import { auth } from "@/lib/firebase";
 import { saveUserToSupabase } from "@/lib/supabase";
 import LoadingState from "@/components/LoadingState";
+import { WhatsAppService } from "@/services/whatsapp.service";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -42,7 +43,11 @@ const WebSocketInitializer = ({ children }: { children: React.ReactNode }) => {
     // Initialize WebSocket connection if user is logged in
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
+        // Connect WebSocket
         whatsAppWebSocket.connect();
+        
+        // Initialize WhatsApp service
+        WhatsAppService.initialize();
         
         // Save user to Supabase
         saveUserToSupabase(user).catch(console.error);
