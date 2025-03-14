@@ -1,8 +1,9 @@
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AuthMiddlewareProps {
   children: ReactNode;
@@ -13,6 +14,7 @@ const AuthMiddleware = ({ children, requireAuth = true }: AuthMiddlewareProps) =
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
   
   const publicPaths = ['/login', '/register', '/forgot-password', '/terms-of-service', '/privacy-policy'];
 
@@ -29,11 +31,28 @@ const AuthMiddleware = ({ children, requireAuth = true }: AuthMiddlewareProps) =
         // Redirect already logged in users away from auth pages
         navigate("/dashboard");
       }
+      
+      setLoading(false);
     });
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
   }, [navigate, toast, requireAuth, location.pathname]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <div className="w-full max-w-md space-y-4">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-64 w-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return <>{children}</>;
 };
