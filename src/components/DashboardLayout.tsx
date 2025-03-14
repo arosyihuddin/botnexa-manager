@@ -3,7 +3,7 @@ import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
   Home, BarChart3, Settings, Users, MessageSquare, BrainCircuit, Calendar, Bell, 
-  LogOut, Search, Menu, X, Activity, Database, Zap, ArrowLeft
+  LogOut, Search, Menu, X, Activity, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,6 +13,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/lib/animations";
 import { ThemeToggle } from "./ThemeToggle";
 import { cn } from "@/lib/utils";
+import { auth } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -26,14 +28,29 @@ const DashboardLayout = ({ children, title, showBackButton, onBack }: DashboardL
   const location = useLocation();
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
+  const { toast } = useToast();
   
   // Update sidebar state when mobile status changes
   useEffect(() => {
     setIsSidebarOpen(!isMobile);
   }, [isMobile]);
   
-  const handleLogout = () => {
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account",
+      });
+      navigate('/login');
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "There was an issue signing out. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
   const handleBack = () => {
@@ -147,8 +164,8 @@ const DashboardLayout = ({ children, title, showBackButton, onBack }: DashboardL
                   )}
                   
                   {showBackButton && (
-                    <Button variant="ghost" size="icon" onClick={handleBack} className="mr-1">
-                      <ArrowLeft className="h-5 w-5" />
+                    <Button variant="ghost" size="icon" onClick={handleBack}>
+                      <Zap className="h-5 w-5" />
                     </Button>
                   )}
                   

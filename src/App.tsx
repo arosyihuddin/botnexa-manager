@@ -36,11 +36,31 @@ const App = () => {
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Suspense fallback={<div>Loading...</div>}><Index /></Suspense>} />
-            <Route path="/login" element={<Suspense fallback={<div>Loading...</div>}><Login /></Suspense>} />
-            <Route path="/register" element={<Suspense fallback={<div>Loading...</div>}><Register /></Suspense>} />
-            <Route path="/forgot-password" element={<Suspense fallback={<div>Loading...</div>}><ForgotPassword /></Suspense>} />
-            <Route path="/terms-of-service" element={<Suspense fallback={<div>Loading...</div>}><TermsOfService /></Suspense>} />
-            <Route path="/privacy-policy" element={<Suspense fallback={<div>Loading...</div>}><PrivacyPolicy /></Suspense>} />
+            <Route path="/login" element={
+              <Suspense fallback={<div>Loading...</div>}>
+                <AuthMiddleware requireAuth={false}><Login /></AuthMiddleware>
+              </Suspense>
+            } />
+            <Route path="/register" element={
+              <Suspense fallback={<div>Loading...</div>}>
+                <AuthMiddleware requireAuth={false}><Register /></AuthMiddleware>
+              </Suspense>
+            } />
+            <Route path="/forgot-password" element={
+              <Suspense fallback={<div>Loading...</div>}>
+                <AuthMiddleware requireAuth={false}><ForgotPassword /></AuthMiddleware>
+              </Suspense>
+            } />
+            <Route path="/terms-of-service" element={
+              <Suspense fallback={<div>Loading...</div>}>
+                <AuthMiddleware requireAuth={false}><TermsOfService /></AuthMiddleware>
+              </Suspense>
+            } />
+            <Route path="/privacy-policy" element={
+              <Suspense fallback={<div>Loading...</div>}>
+                <AuthMiddleware requireAuth={false}><PrivacyPolicy /></AuthMiddleware>
+              </Suspense>
+            } />
             
             {/* Protected routes */}
             <Route path="/dashboard" element={
