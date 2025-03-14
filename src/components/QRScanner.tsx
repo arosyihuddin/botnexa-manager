@@ -4,39 +4,167 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScanLine, QrCode, RefreshCw } from "lucide-react";
+import { ScanLine, QrCode, RefreshCw, Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useWhatsAppWebSocket } from "@/lib/websocket";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
+import { auth } from "@/lib/firebase";
+import { updateWhatsAppConnectionStatus } from "@/lib/supabase";
 
 const QRScanner = () => {
   const [pairingCode, setPairingCode] = useState("");
   const [isScanning, setIsScanning] = useState(false);
-  const [qrRefreshCounter, setQrRefreshCounter] = useState(0);
+  const [qrData, setQrData] = useState<string | null>(null);
+  const [qrExpiryProgress, setQrExpiryProgress] = useState(100);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [generatedPairingCode, setGeneratedPairingCode] = useState("");
   const [showGeneratedCode, setShowGeneratedCode] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<string>("idle");
   const isMobile = useIsMobile();
+  const { connect, disconnect, subscribe, sendMessage } = useWhatsAppWebSocket();
+  const { toast } = useToast();
+  const currentUser = auth.currentUser;
 
-  // Simulate QR code refresh
+  // Connect to WebSocket when component mounts
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (isScanning) {
-        setQrRefreshCounter((prev) => prev + 1);
-      }
-    }, 20000); // Refresh every 20 seconds
+    connect();
+    
+    return () => {
+      disconnect();
+    };
+  }, []);
 
-    return () => clearTimeout(timer);
-  }, [isScanning, qrRefreshCounter]);
+  // Subscribe to WebSocket events
+  useEffect(() => {
+    // Handle QR code updates
+    const unsubQR = subscribe('qr', (data) => {
+      setQrData(data.qrcode);
+      setQrExpiryProgress(100);
+      setConnectionStatus("awaiting_scan");
+      setIsConnecting(false);
+    });
+
+    // Handle ready/authenticated state
+    const unsubReady = subscribe('ready', (data) => {
+      setConnectionStatus("connected");
+      setIsConnecting(false);
+      toast({
+        title: "WhatsApp Connected",
+        description: "Your WhatsApp account has been successfully connected.",
+      });
+      
+      // Update connection status in Supabase
+      if (currentUser) {
+        updateWhatsAppConnectionStatus(currentUser.uid, true);
+      }
+    });
+
+    // Handle disconnection
+    const unsubDisconnect = subscribe('disconnected', () => {
+      setConnectionStatus("disconnected");
+      setIsConnecting(false);
+      setQrData(null);
+      
+      toast({
+        title: "WhatsApp Disconnected",
+        description: "Your WhatsApp connection has been lost. Please reconnect.",
+        variant: "destructive",
+      });
+      
+      // Update connection status in Supabase
+      if (currentUser) {
+        updateWhatsAppConnectionStatus(currentUser.uid, false);
+      }
+    });
+
+    // Handle errors
+    const unsubError = subscribe('error', (data) => {
+      setConnectionStatus("error");
+      setIsConnecting(false);
+      toast({
+        title: "Connection Error",
+        description: data.message || "There was an error connecting to WhatsApp.",
+        variant: "destructive",
+      });
+    });
+
+    return () => {
+      unsubQR();
+      unsubReady();
+      unsubDisconnect();
+      unsubError();
+    };
+  }, [currentUser]);
+
+  // QR code expiry timer
+  useEffect(() => {
+    if (!qrData || qrExpiryProgress <= 0) return;
+
+    const totalTime = 20; // 20 seconds
+    const interval = 200; // update every 200ms
+    const step = 100 / (totalTime * 1000 / interval);
+
+    const timer = setInterval(() => {
+      setQrExpiryProgress((prev) => {
+        const newValue = prev - step;
+        if (newValue <= 0) {
+          clearInterval(timer);
+          return 0;
+        }
+        return newValue;
+      });
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [qrData]);
+
+  // Request new QR code when progress expires
+  useEffect(() => {
+    if (qrExpiryProgress <= 0 && connectionStatus === "awaiting_scan") {
+      refreshQRCode();
+    }
+  }, [qrExpiryProgress, connectionStatus]);
 
   const handlePairingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Pairing with code:", pairingCode);
-    // Generate a random 8-digit code
-    const randomCode = Math.floor(10000000 + Math.random() * 90000000).toString();
-    setGeneratedPairingCode(randomCode);
-    setShowGeneratedCode(true);
+    
+    setIsConnecting(true);
+    
+    // Send phone number to backend for pairing code generation
+    sendMessage('generate_pairing_code', { phone: pairingCode });
+    
+    // Simulate pairing code generation for now
+    setTimeout(() => {
+      const randomCode = Math.floor(10000000 + Math.random() * 90000000).toString();
+      setGeneratedPairingCode(randomCode);
+      setShowGeneratedCode(true);
+      setIsConnecting(false);
+    }, 1500);
   };
 
   const refreshQRCode = () => {
-    setQrRefreshCounter((prev) => prev + 1);
+    setIsConnecting(true);
+    sendMessage('request_qr', {});
+    
+    // Fallback in case WebSocket isn't responding
+    setTimeout(() => {
+      if (isConnecting) {
+        setIsConnecting(false);
+        toast({
+          title: "Connection Timeout",
+          description: "Could not get a new QR code. Please check your connection and try again.",
+          variant: "destructive",
+        });
+      }
+    }, 10000);
+  };
+  
+  const handleStartScan = () => {
+    setIsScanning(true);
+    setShowGeneratedCode(false);
+    setIsConnecting(true);
+    refreshQRCode();
   };
 
   const qrSize = isMobile ? "w-full max-w-[250px]" : "w-64";
@@ -47,10 +175,7 @@ const QRScanner = () => {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger 
             value="scan" 
-            onClick={() => {
-              setIsScanning(true);
-              setShowGeneratedCode(false);
-            }}
+            onClick={handleStartScan}
           >
             Scan QR Code
           </TabsTrigger>
@@ -75,14 +200,39 @@ const QRScanner = () => {
             <div className="relative mx-auto flex items-center justify-center">
               {/* QR Code with responsive size */}
               <div className={`${qrSize} h-auto aspect-square p-4 border-2 border-botnexa-500 rounded-lg relative`}>
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=botnexa-connect-${qrRefreshCounter}`} 
-                  alt="WhatsApp QR Code"
-                  className="w-full h-full object-contain"
-                />
+                {isConnecting ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                    <Loader2 className="h-8 w-8 animate-spin text-botnexa-500" />
+                  </div>
+                ) : qrData ? (
+                  <img 
+                    src={`data:image/png;base64,${qrData}`} 
+                    alt="WhatsApp QR Code"
+                    className="w-full h-full object-contain"
+                  />
+                ) : connectionStatus === "connected" ? (
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <div className="bg-green-100 p-2 rounded-full mb-2">
+                      <ScanLine className="h-8 w-8 text-green-600" />
+                    </div>
+                    <p className="text-sm font-medium text-green-600">Connected</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <QrCode className="h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">No QR code available</p>
+                  </div>
+                )}
+                
+                {/* Scanning animation */}
+                {qrData && connectionStatus === "awaiting_scan" && (
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="w-full h-1 bg-botnexa-500/50 animate-scan" />
+                  </div>
+                )}
               </div>
               
-              {/* Style for the scanning animation - Fixed with proper syntax */}
+              {/* Style for the scanning animation */}
               <style>
                 {`
                   @keyframes scan {
@@ -97,20 +247,34 @@ const QRScanner = () => {
               </style>
             </div>
             
+            {/* QR Code expiry progress bar */}
+            {qrData && (
+              <div className="w-full max-w-xs mx-auto">
+                <Progress value={qrExpiryProgress} className="h-1" />
+              </div>
+            )}
+            
             <div className="flex justify-center pt-2">
               <Button
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-1"
                 onClick={refreshQRCode}
+                disabled={isConnecting || connectionStatus === "connected"}
               >
-                <RefreshCw className="h-4 w-4" />
+                {isConnecting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
                 Refresh QR
               </Button>
             </div>
             
             <p className="text-xs text-muted-foreground pt-2">
-              QR code will refresh automatically every 20 seconds
+              {qrData 
+                ? "QR code will refresh automatically after 20 seconds" 
+                : "Click Refresh QR to generate a new QR code"}
             </p>
           </div>
         </TabsContent>
@@ -162,9 +326,16 @@ const QRScanner = () => {
                     <Button 
                       type="submit" 
                       className="w-full bg-botnexa-500 hover:bg-botnexa-600"
-                      disabled={!pairingCode.trim()}
+                      disabled={!pairingCode.trim() || isConnecting}
                     >
-                      Generate Pairing Code
+                      {isConnecting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        "Generate Pairing Code"
+                      )}
                     </Button>
                   </div>
                 </form>
