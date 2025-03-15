@@ -2,7 +2,16 @@
 import { ApiService } from "./api.service";
 import { auth } from "@/lib/firebase";
 import { updateProfile, updateEmail } from "firebase/auth";
-import { UserProfile, saveUserToSupabase, getUserProfile } from "@/lib/supabase";
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  avatar_url?: string;
+  phone_number?: string;
+  created_at: string;
+  subscription_tier: 'free' | 'premium' | 'business';
+}
 
 export interface UserSettings {
   notificationsEnabled: boolean;
@@ -22,29 +31,23 @@ export interface UserBot {
 
 export class UserService extends ApiService {
   /**
-   * Get current user profile
+   * Get current user profile from API
    */
   static async getCurrentUserProfile(): Promise<UserProfile | null> {
     const user = auth.currentUser;
     if (!user) return null;
     
     try {
-      // First try to get from API
-      const apiProfile = await this.getUserById(user.uid);
-      
-      // Save to Supabase for local caching/sync
-      await saveUserToSupabase(user);
-      
-      return apiProfile;
+      // Get user profile from API
+      return await this.getUserById(user.uid);
     } catch (error) {
-      console.error("Error fetching from API, falling back to Supabase", error);
-      // Fallback to Supabase if API is not available
-      return getUserProfile(user.uid);
+      console.error("Error fetching user profile from API", error);
+      throw error;
     }
   }
   
   /**
-   * Update user profile in both Firebase and Supabase
+   * Update user profile in both Firebase and API backend
    */
   static async updateUserProfile(profileData: Partial<UserProfile>): Promise<UserProfile | null> {
     const user = auth.currentUser;
@@ -64,13 +67,7 @@ export class UserService extends ApiService {
       await updateEmail(user, profileData.email);
     }
     
-    // Update phone if provided and different
-    if (profileData.phone_number && profileData.phone_number !== user.phoneNumber) {
-      // Note: This requires additional verification in a real application
-      console.log("Phone number update requested but requires verification");
-    }
-    
-    // Update Supabase database
+    // Update API backend
     return this.apiRequest<UserProfile>('/user/profile', 'PUT', profileData);
   }
   
@@ -137,5 +134,19 @@ export class UserService extends ApiService {
       'PUT',
       { status: isActive ? 'online' : 'offline' }
     );
+  }
+  
+  /**
+   * Create a new bot
+   */
+  static async createBot(botData: { name: string, type: string }): Promise<UserBot> {
+    return this.apiRequest<UserBot>('/bots', 'POST', botData);
+  }
+  
+  /**
+   * Delete a bot
+   */
+  static async deleteBot(botId: string): Promise<void> {
+    return this.apiRequest<void>(`/bots/${botId}`, 'DELETE');
   }
 }

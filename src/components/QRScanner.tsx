@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,11 +9,14 @@ import { useWhatsAppWebSocket } from "@/lib/websocket";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { auth } from "@/lib/firebase";
-import { updateWhatsAppConnectionStatus } from "@/lib/supabase";
 import { Switch } from "@/components/ui/switch";
 import { WhatsAppService } from "@/services/whatsapp.service";
 
-const QRScanner = () => {
+interface QRScannerProps {
+  onConnected?: () => void;
+}
+
+const QRScanner = ({ onConnected }: QRScannerProps) => {
   const [pairingCode, setPairingCode] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [qrData, setQrData] = useState<string | null>(null);
@@ -76,15 +78,16 @@ const QRScanner = () => {
     const unsubReady = subscribe('ready', (data) => {
       setConnectionStatus("connected");
       setIsConnecting(false);
+      
+      // Call the onConnected callback if provided
+      if (onConnected) {
+        onConnected();
+      }
+      
       toast({
         title: "WhatsApp Connected",
         description: "Your WhatsApp account has been successfully connected.",
       });
-      
-      // Update connection status in Supabase
-      if (currentUser) {
-        updateWhatsAppConnectionStatus(currentUser.uid, true);
-      }
     });
 
     // Handle disconnection
@@ -98,11 +101,6 @@ const QRScanner = () => {
         description: "Your WhatsApp connection has been lost. Please reconnect.",
         variant: "destructive",
       });
-      
-      // Update connection status in Supabase
-      if (currentUser) {
-        updateWhatsAppConnectionStatus(currentUser.uid, false);
-      }
     });
 
     // Handle errors
@@ -122,7 +120,7 @@ const QRScanner = () => {
       unsubDisconnect();
       unsubError();
     };
-  }, [isBotActive, currentUser]);
+  }, [isBotActive, onConnected, toast, subscribe]);
 
   // QR code expiry timer
   useEffect(() => {

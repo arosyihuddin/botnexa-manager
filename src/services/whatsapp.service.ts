@@ -1,7 +1,6 @@
 
 import { ApiService } from "./api.service";
 import { whatsAppWebSocket } from "@/lib/websocket";
-import { updateWhatsAppConnectionStatus } from "@/lib/supabase";
 import { auth } from "@/lib/firebase";
 
 export interface WhatsAppStatus {
@@ -80,11 +79,6 @@ export class WhatsAppService extends ApiService {
       lastSyncTimestamp: data.lastSyncTimestamp,
       batteryLevel: data.batteryLevel
     };
-    
-    // Update Supabase with connection status
-    if (data.userId) {
-      updateWhatsAppConnectionStatus(data.userId, data.connected);
-    }
   }
   
   /**
