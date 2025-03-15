@@ -3,7 +3,7 @@ import { auth } from "@/lib/firebase";
 import { toast } from "@/components/ui/use-toast";
 
 // Base API URL - should be stored in environment variables in production
-const API_BASE_URL = 'https://api.botnexa.com/v1';
+const API_BASE_URL = 'http://localhost:3000/api/v1';
 
 /**
  * Base API Service with common methods and error handling
@@ -15,7 +15,7 @@ export class ApiService {
   protected static async apiRequest<T>(
     endpoint: string, 
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
-    data?: any
+    data?: Record<string, unknown>
   ): Promise<T> {
     try {
       // Get current user's token for authentication

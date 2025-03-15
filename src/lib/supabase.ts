@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import { User } from 'firebase/auth';
 
 // Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-supabase-url.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-supabase-anon-key';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ywskcjllsdbnapecmfkg.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3c2tjamxsc2RibmFwZWNtZmtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkwODQ1NzgsImV4cCI6MjA1NDY2MDU3OH0.sHTtQy6eHbxNi3REi7B8AnfEoDAuoH1d0kMiXZpPLt0';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
