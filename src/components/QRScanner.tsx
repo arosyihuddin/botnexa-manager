@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScanLine, QrCode, RefreshCw, Loader2 } from "lucide-react";
+import { ScanLine, QrCode, RefreshCw, Loader2, Power } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWhatsAppWebSocket } from "@/lib/websocket";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { auth } from "@/lib/firebase";
 import { updateWhatsAppConnectionStatus } from "@/lib/supabase";
+import { Switch } from "@/components/ui/switch";
+import { WhatsAppService } from "@/services/whatsapp.service";
 
 const QRScanner = () => {
   const [pairingCode, setPairingCode] = useState("");
@@ -21,22 +23,47 @@ const QRScanner = () => {
   const [generatedPairingCode, setGeneratedPairingCode] = useState("");
   const [showGeneratedCode, setShowGeneratedCode] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string>("idle");
+  const [isBotActive, setIsBotActive] = useState(false);
+  const [isTogglingBot, setIsTogglingBot] = useState(false);
   const isMobile = useIsMobile();
   const { connect, disconnect, subscribe, sendMessage } = useWhatsAppWebSocket();
   const { toast } = useToast();
   const currentUser = auth.currentUser;
 
-  // Connect to WebSocket when component mounts
+  // Check bot status when component mounts
   useEffect(() => {
-    connect();
+    const checkBotStatus = async () => {
+      try {
+        const status = WhatsAppService.getStatus();
+        setIsBotActive(status.botStatus === 'online');
+      } catch (error) {
+        console.error('Error checking bot status:', error);
+      }
+    };
+    
+    checkBotStatus();
+  }, []);
+
+  // Connect to WebSocket only when bot is active
+  useEffect(() => {
+    if (isBotActive) {
+      connect();
+    } else {
+      disconnect();
+      setQrData(null);
+      setConnectionStatus("idle");
+    }
     
     return () => {
       disconnect();
     };
-  }, []);
+  }, [isBotActive]);
 
   // Subscribe to WebSocket events
   useEffect(() => {
+    // Only subscribe if bot is active
+    if (!isBotActive) return;
+    
     // Handle QR code updates
     const unsubQR = subscribe('qr', (data) => {
       setQrData(data.qrcode);
@@ -95,7 +122,7 @@ const QRScanner = () => {
       unsubDisconnect();
       unsubError();
     };
-  }, [currentUser]);
+  }, [isBotActive, currentUser]);
 
   // QR code expiry timer
   useEffect(() => {
@@ -121,13 +148,23 @@ const QRScanner = () => {
 
   // Request new QR code when progress expires
   useEffect(() => {
-    if (qrExpiryProgress <= 0 && connectionStatus === "awaiting_scan") {
+    if (qrExpiryProgress <= 0 && connectionStatus === "awaiting_scan" && isBotActive) {
       refreshQRCode();
     }
-  }, [qrExpiryProgress, connectionStatus]);
+  }, [qrExpiryProgress, connectionStatus, isBotActive]);
 
   const handlePairingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if bot is active
+    if (!isBotActive) {
+      toast({
+        title: "Bot is inactive",
+        description: "Please activate the bot before attempting to connect.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsConnecting(true);
     
@@ -144,6 +181,16 @@ const QRScanner = () => {
   };
 
   const refreshQRCode = () => {
+    // Check if bot is active
+    if (!isBotActive) {
+      toast({
+        title: "Bot is inactive",
+        description: "Please activate the bot before attempting to connect.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsConnecting(true);
     sendMessage('request_qr', {});
     
@@ -161,21 +208,83 @@ const QRScanner = () => {
   };
   
   const handleStartScan = () => {
+    // Check if bot is active
+    if (!isBotActive) {
+      toast({
+        title: "Bot is inactive",
+        description: "Please activate the bot before attempting to scan.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsScanning(true);
     setShowGeneratedCode(false);
     setIsConnecting(true);
     refreshQRCode();
   };
 
+  const handleToggleBot = async () => {
+    try {
+      setIsTogglingBot(true);
+      
+      // Toggle bot status
+      await WhatsAppService.toggleBotStatus(!isBotActive);
+      
+      // Update local state
+      setIsBotActive(!isBotActive);
+      
+      // Show toast
+      toast({
+        title: !isBotActive ? "Bot Activated" : "Bot Deactivated",
+        description: !isBotActive 
+          ? "WhatsApp bot is now active. You can now connect your account." 
+          : "WhatsApp bot has been deactivated. Your connection has been closed.",
+      });
+      
+      // Reset states if turning off
+      if (isBotActive) {
+        setQrData(null);
+        setConnectionStatus("idle");
+      }
+    } catch (error) {
+      console.error('Error toggling bot status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to toggle bot status. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTogglingBot(false);
+    }
+  };
+
   const qrSize = isMobile ? "w-full max-w-[250px]" : "w-64";
 
   return (
     <Card className="w-full max-w-md mx-auto overflow-hidden">
+      {/* Bot activation toggle */}
+      <div className="p-4 border-b flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Power className={`h-5 w-5 ${isBotActive ? 'text-green-500' : 'text-gray-400'}`} />
+          <span className="font-medium">WhatsApp Bot</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">{isBotActive ? 'Active' : 'Inactive'}</span>
+          <Switch 
+            checked={isBotActive} 
+            onCheckedChange={handleToggleBot}
+            disabled={isTogglingBot}
+          />
+        </div>
+      </div>
+      
       <Tabs defaultValue="scan" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger 
             value="scan" 
             onClick={handleStartScan}
+            disabled={!isBotActive}
           >
             Scan QR Code
           </TabsTrigger>
@@ -185,6 +294,7 @@ const QRScanner = () => {
               setIsScanning(false);
               setShowGeneratedCode(false);
             }}
+            disabled={!isBotActive}
           >
             Pairing Code
           </TabsTrigger>
@@ -194,7 +304,9 @@ const QRScanner = () => {
           <div className="text-center space-y-4">
             <div className="text-lg font-medium">Scan the QR code with WhatsApp</div>
             <p className="text-sm text-muted-foreground pb-2">
-              Open WhatsApp on your phone, tap Menu or Settings and select WhatsApp Web
+              {isBotActive 
+                ? "Open WhatsApp on your phone, tap Menu or Settings and select WhatsApp Web" 
+                : "Activate the bot to start scanning"}
             </p>
             
             <div className="relative mx-auto flex items-center justify-center">
@@ -216,6 +328,11 @@ const QRScanner = () => {
                       <ScanLine className="h-8 w-8 text-green-600" />
                     </div>
                     <p className="text-sm font-medium text-green-600">Connected</p>
+                  </div>
+                ) : !isBotActive ? (
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <Power className="h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">Bot is inactive</p>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full">
@@ -260,7 +377,7 @@ const QRScanner = () => {
                 size="sm"
                 className="flex items-center gap-1"
                 onClick={refreshQRCode}
-                disabled={isConnecting || connectionStatus === "connected"}
+                disabled={isConnecting || connectionStatus === "connected" || !isBotActive}
               >
                 {isConnecting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -272,9 +389,11 @@ const QRScanner = () => {
             </div>
             
             <p className="text-xs text-muted-foreground pt-2">
-              {qrData 
-                ? "QR code will refresh automatically after 20 seconds" 
-                : "Click Refresh QR to generate a new QR code"}
+              {!isBotActive 
+                ? "Activate the bot to get a QR code" 
+                : qrData 
+                  ? "QR code will refresh automatically after 20 seconds" 
+                  : "Click Refresh QR to generate a new QR code"}
             </p>
           </div>
         </TabsContent>
@@ -283,7 +402,14 @@ const QRScanner = () => {
           <div className="text-center space-y-4">
             <div className="text-lg font-medium">Connect with pairing code</div>
             
-            {showGeneratedCode ? (
+            {!isBotActive ? (
+              <div className="flex flex-col items-center gap-4 py-8">
+                <Power className="h-10 w-10 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Please activate the bot to use the pairing code feature
+                </p>
+              </div>
+            ) : showGeneratedCode ? (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground pb-2">
                   Enter this 8-digit code in your WhatsApp:
@@ -326,7 +452,7 @@ const QRScanner = () => {
                     <Button 
                       type="submit" 
                       className="w-full bg-botnexa-500 hover:bg-botnexa-600"
-                      disabled={!pairingCode.trim() || isConnecting}
+                      disabled={!pairingCode.trim() || isConnecting || !isBotActive}
                     >
                       {isConnecting ? (
                         <>

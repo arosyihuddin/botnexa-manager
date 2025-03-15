@@ -15,21 +15,26 @@ export class ApiService {
   protected static async apiRequest<T>(
     endpoint: string, 
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
-    data?: Record<string, unknown>
+    data?: Record<string, unknown>,
+    requiresAuth: boolean = true
   ): Promise<T> {
     try {
-      // Get current user's token for authentication
-      const user = auth.currentUser;
-      const token = user ? await user.getIdToken() : null;
-      
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-      
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
       };
+      
+      // Add authentication token if required
+      if (requiresAuth) {
+        // Get current user's token for authentication
+        const user = auth.currentUser;
+        const token = user ? await user.getIdToken() : null;
+        
+        if (!token) {
+          throw new Error('Authentication required');
+        }
+        
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       
       const options: RequestInit = {
         method,
@@ -131,5 +136,44 @@ export class ApiService {
       
       throw error;
     }
+  }
+
+  /**
+   * Login API endpoint
+   */
+  static async login(email: string, password: string): Promise<any> {
+    return this.apiRequest('/login', 'POST', { email, password }, false);
+  }
+
+  /**
+   * Register API endpoint
+   */
+  static async register(userData: {
+    email: string;
+    password: string;
+    fullName: string;
+  }): Promise<any> {
+    return this.apiRequest('/register', 'POST', userData, false);
+  }
+
+  /**
+   * Get all users
+   */
+  static async getUsers(): Promise<any[]> {
+    return this.apiRequest('/users');
+  }
+
+  /**
+   * Get user by ID
+   */
+  static async getUserById(userId: string): Promise<any> {
+    return this.apiRequest(`/users/${userId}`);
+  }
+
+  /**
+   * Get user bots
+   */
+  static async getUserBots(userId: string): Promise<any[]> {
+    return this.apiRequest(`/users/${userId}/bots`);
   }
 }

@@ -1,5 +1,5 @@
 
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 type WebSocketMessageType = 
   | 'qr'
@@ -9,7 +9,10 @@ type WebSocketMessageType =
   | 'disconnected'
   | 'error'
   | 'whatsapp_status'
-  | 'whatsapp_qr';
+  | 'whatsapp_qr'
+  | 'generate_pairing_code' 
+  | 'request_qr'
+  | 'get_whatsapp_status';
 
 interface WebSocketMessage {
   type: WebSocketMessageType;

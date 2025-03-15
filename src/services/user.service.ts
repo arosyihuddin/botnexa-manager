@@ -11,6 +11,15 @@ export interface UserSettings {
   language: string;
 }
 
+export interface UserBot {
+  id: string;
+  name: string;
+  status: 'online' | 'offline';
+  isConnected: boolean;
+  lastConnection?: string;
+  type: string;
+}
+
 export class UserService extends ApiService {
   /**
    * Get current user profile
@@ -19,7 +28,19 @@ export class UserService extends ApiService {
     const user = auth.currentUser;
     if (!user) return null;
     
-    return getUserProfile(user.uid);
+    try {
+      // First try to get from API
+      const apiProfile = await this.getUserById(user.uid);
+      
+      // Save to Supabase for local caching/sync
+      await saveUserToSupabase(user);
+      
+      return apiProfile;
+    } catch (error) {
+      console.error("Error fetching from API, falling back to Supabase", error);
+      // Fallback to Supabase if API is not available
+      return getUserProfile(user.uid);
+    }
   }
   
   /**
@@ -87,6 +108,27 @@ export class UserService extends ApiService {
       '/user/subscription',
       'PUT',
       { tier }
+    );
+  }
+
+  /**
+   * Get user bots
+   */
+  static async getUserBots(): Promise<UserBot[]> {
+    const user = auth.currentUser;
+    if (!user) return [];
+    
+    return this.getUserBots(user.uid);
+  }
+
+  /**
+   * Toggle bot status (on/off)
+   */
+  static async toggleBotStatus(botId: string, isActive: boolean): Promise<UserBot> {
+    return this.apiRequest<UserBot>(
+      `/bots/${botId}/status`,
+      'PUT',
+      { status: isActive ? 'online' : 'offline' }
     );
   }
 }
