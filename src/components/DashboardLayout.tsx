@@ -2,8 +2,8 @@
 import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
-  Home, BarChart3, Settings, Users, MessageSquare, BrainCircuit, Calendar, Bell, 
-  LogOut, Search, Menu, X, Activity, Zap
+  Home, BarChart3, Settings, Users, MessageSquare, Calendar, Bell, 
+  LogOut, Search, Menu, X, Activity, Bot
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -97,10 +97,10 @@ const DashboardLayout = ({ children, title, showBackButton, onBack }: DashboardL
                     to="/conversations" 
                   />
                   <NavItem 
-                    icon={<BrainCircuit className="h-5 w-5" />} 
-                    label="AI Settings" 
-                    active={location.pathname === '/ai-settings'} 
-                    to="/ai-settings" 
+                    icon={<Bot className="h-5 w-5" />} 
+                    label="Bots" 
+                    active={location.pathname === '/bot-management'} 
+                    to="/bot-management" 
                   />
                   <NavItem 
                     icon={<Calendar className="h-5 w-5" />} 
@@ -165,7 +165,7 @@ const DashboardLayout = ({ children, title, showBackButton, onBack }: DashboardL
                   
                   {showBackButton && (
                     <Button variant="ghost" size="icon" onClick={handleBack}>
-                      <Zap className="h-5 w-5" />
+                      <X className="h-5 w-5" />
                     </Button>
                   )}
                   

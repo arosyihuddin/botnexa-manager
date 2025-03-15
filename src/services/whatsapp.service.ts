@@ -1,167 +1,185 @@
 
-import { ApiService } from "./api.service";
-import { whatsAppWebSocket } from "@/lib/websocket";
+import { EventEmitter } from 'events';
 import { auth } from "@/lib/firebase";
 
-export interface WhatsAppStatus {
-  connected: boolean;
-  phone?: string;
-  qrCode?: string;
-  lastSyncTimestamp?: string;
-  batteryLevel?: number;
-  botStatus: 'online' | 'offline';
+// Extend EventEmitter to create a custom event system
+class WhatsAppEventEmitter extends EventEmitter {}
+
+export const whatsAppEvents = new WhatsAppEventEmitter();
+
+interface WhatsAppMessage {
+  id: string;
+  from: string;
+  to: string;
+  content: string;
+  timestamp: number;
+  type: 'text' | 'image' | 'audio' | 'video' | 'document';
+  status: 'sent' | 'delivered' | 'read';
+  isFromMe: boolean;
 }
 
-export class WhatsAppService extends ApiService {
-  private static status: WhatsAppStatus = {
-    connected: false,
-    botStatus: 'offline'
+interface WhatsAppContact {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  profilePicUrl?: string;
+  lastSeen?: number;
+  about?: string;
+}
+
+interface WhatsAppConnectionState {
+  isConnected: boolean;
+  qrCode?: string;
+  connectionPhase: 'disconnected' | 'connecting' | 'connected';
+  lastError?: string;
+}
+
+export class WhatsAppService {
+  private static connectionState: WhatsAppConnectionState = {
+    isConnected: false,
+    connectionPhase: 'disconnected'
   };
-  
+
+  private static mockQRCode: string = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=whatsapp-bot-connection';
+
   /**
-   * Initialize WhatsApp service and websocket listeners
+   * Initialize WhatsApp service
    */
   static initialize(): void {
-    // Set up WebSocket message handling
-    whatsAppWebSocket.subscribe('whatsapp_status', (data) => {
-      this.handleStatusUpdate(data);
-    });
+    console.log('Initializing WhatsApp service...');
     
-    whatsAppWebSocket.subscribe('whatsapp_qr', (data) => {
-      this.handleQRUpdate(data.qrCode);
-    });
+    // Set up event listeners
+    this.setupEventListeners();
     
-    // Request initial status when WebSocket connects
-    whatsAppWebSocket.subscribe('ready', () => {
-      whatsAppWebSocket.sendMessage('get_whatsapp_status');
-    });
-
-    // Check bot status on initialization
-    this.checkBotStatus();
-  }
-  
-  /**
-   * Check if bot is active before attempting to connect
-   */
-  private static async checkBotStatus(): Promise<void> {
-    try {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      // Get bot status from API
-      const bots = await this.apiRequest<any[]>(`/users/${user.uid}/bots`);
-      
-      if (bots && bots.length > 0) {
-        const whatsappBot = bots.find(bot => bot.type === 'whatsapp');
-        
-        if (whatsappBot) {
-          this.status.botStatus = whatsappBot.status;
-          
-          // If bot is online, connect to WebSocket
-          if (whatsappBot.status === 'online') {
-            whatsAppWebSocket.connect();
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error checking bot status:', error);
+    // Check if user is already logged in, if so, attempt to restore connection
+    if (auth.currentUser) {
+      this.attemptAutoConnect();
     }
   }
   
   /**
-   * Handle WhatsApp status updates from WebSocket
+   * Set up event listeners for the service
    */
-  private static handleStatusUpdate(data: any): void {
-    this.status = {
-      ...this.status,
-      connected: data.connected,
-      phone: data.phone,
-      lastSyncTimestamp: data.lastSyncTimestamp,
-      batteryLevel: data.batteryLevel
-    };
-  }
-  
-  /**
-   * Handle QR code updates from WebSocket
-   */
-  private static handleQRUpdate(qrCode: string): void {
-    this.status.qrCode = qrCode;
-    // Trigger any registered QR code listeners
-    this.qrListeners.forEach(listener => listener(qrCode));
-  }
-  
-  // Store QR code update listeners
-  private static qrListeners: ((qrCode: string) => void)[] = [];
-  
-  /**
-   * Register a listener for QR code updates
-   */
-  static onQRCodeUpdate(listener: (qrCode: string) => void): () => void {
-    this.qrListeners.push(listener);
-    return () => {
-      this.qrListeners = this.qrListeners.filter(l => l !== listener);
-    };
-  }
-  
-  /**
-   * Get current WhatsApp connection status
-   */
-  static getStatus(): WhatsAppStatus {
-    return this.status;
-  }
-  
-  /**
-   * Manually request a new QR code
-   */
-  static async requestNewQRCode(): Promise<void> {
-    // First, check if bot is active
-    if (this.status.botStatus !== 'online') {
-      throw new Error('Bot is not active. Please activate the bot first.');
-    }
-    
-    return this.apiRequest<void>('/whatsapp/request-qr', 'POST');
-  }
-  
-  /**
-   * Logout from WhatsApp
-   */
-  static async logout(): Promise<void> {
-    return this.apiRequest<void>('/whatsapp/logout', 'POST');
-  }
-  
-  /**
-   * Restart WhatsApp connection
-   */
-  static async restart(): Promise<void> {
-    return this.apiRequest<void>('/whatsapp/restart', 'POST');
-  }
-  
-  /**
-   * Toggle bot status (on/off)
-   */
-  static async toggleBotStatus(isActive: boolean): Promise<void> {
-    const user = auth.currentUser;
-    if (!user) throw new Error('User not authenticated');
-    
-    try {
-      // Update bot status in API
-      const response = await this.apiRequest<{id: string, status: 'online' | 'offline'}>(
-        '/whatsapp/bot-status',
-        'PUT',
-        { status: isActive ? 'online' : 'offline' }
-      );
-      
-      // Update local status
-      this.status.botStatus = response.status;
-      
-      // Connect or disconnect WebSocket based on status
-      if (isActive) {
-        whatsAppWebSocket.connect();
+  private static setupEventListeners(): void {
+    // Listen for auth state changes to handle reconnections
+    auth.onAuthStateChanged((user) => {
+      if (user && this.connectionState.isConnected) {
+        // If user is logged in and we're already connected, just update status
+        whatsAppEvents.emit('connectionStateChanged', this.connectionState);
+      } else if (user) {
+        // If user is logged in but not connected, attempt to reconnect
+        this.attemptAutoConnect();
       } else {
-        whatsAppWebSocket.disconnect();
+        // If user is logged out, disconnect
+        this.disconnect();
       }
+    });
+  }
+  
+  /**
+   * Attempt to automatically connect based on saved session
+   */
+  private static attemptAutoConnect(): void {
+    // This would normally check for saved sessions and try to reconnect
+    console.log('Attempting to auto-connect WhatsApp...');
+    
+    // Simulate session check/restoration
+    setTimeout(() => {
+      // For demo purposes, we'll just emit a state change
+      this.connectionState.connectionPhase = 'disconnected';
+      whatsAppEvents.emit('connectionStateChanged', this.connectionState);
+    }, 1000);
+  }
+  
+  /**
+   * Connect to WhatsApp
+   */
+  static async connect(): Promise<WhatsAppConnectionState> {
+    if (this.connectionState.isConnected) {
+      return this.connectionState;
+    }
+    
+    try {
+      console.log('Connecting to WhatsApp...');
       
+      // Update connection state
+      this.connectionState.connectionPhase = 'connecting';
+      whatsAppEvents.emit('connectionStateChanged', this.connectionState);
+      
+      // Generate QR Code (in a real implementation, this would come from the WhatsApp API)
+      this.connectionState.qrCode = this.mockQRCode;
+      whatsAppEvents.emit('qrCodeGenerated', this.connectionState.qrCode);
+      
+      // Simulate connection process
+      // In a real implementation, you would wait for the user to scan the QR code
+      return this.connectionState;
+    } catch (error) {
+      console.error('Error connecting to WhatsApp:', error);
+      this.connectionState.connectionPhase = 'disconnected';
+      this.connectionState.lastError = 'Failed to connect to WhatsApp';
+      whatsAppEvents.emit('connectionError', this.connectionState.lastError);
+      throw error;
+    }
+  }
+  
+  /**
+   * Complete connection after QR scan
+   */
+  static async completeConnection(): Promise<WhatsAppConnectionState> {
+    // This would be called after the QR code has been scanned
+    // In a real implementation, you would confirm the connection with the WhatsApp API
+    
+    console.log('QR code scanned, completing connection...');
+    
+    // Simulate successful connection
+    setTimeout(() => {
+      this.connectionState.isConnected = true;
+      this.connectionState.connectionPhase = 'connected';
+      this.connectionState.qrCode = undefined; // Clear QR code
+      whatsAppEvents.emit('connectionStateChanged', this.connectionState);
+    }, 2000);
+    
+    return this.connectionState;
+  }
+  
+  /**
+   * Disconnect from WhatsApp
+   */
+  static async disconnect(): Promise<void> {
+    if (!this.connectionState.isConnected) {
       return;
+    }
+    
+    console.log('Disconnecting from WhatsApp...');
+    
+    // Update connection state
+    this.connectionState.isConnected = false;
+    this.connectionState.connectionPhase = 'disconnected';
+    this.connectionState.qrCode = undefined;
+    
+    whatsAppEvents.emit('connectionStateChanged', this.connectionState);
+  }
+  
+  /**
+   * Check connection status
+   */
+  static getConnectionState(): WhatsAppConnectionState {
+    return this.connectionState;
+  }
+  
+  /**
+   * Toggle bot status
+   */
+  static async toggleBotStatus(isActive: boolean): Promise<boolean> {
+    try {
+      if (isActive) {
+        if (!this.connectionState.isConnected) {
+          await this.connect();
+        }
+      } else {
+        await this.disconnect();
+      }
+      return isActive;
     } catch (error) {
       console.error('Error toggling bot status:', error);
       throw error;
@@ -169,9 +187,80 @@ export class WhatsAppService extends ApiService {
   }
   
   /**
-   * Check if the bot is active
+   * Send message
    */
-  static isBotActive(): boolean {
-    return this.status.botStatus === 'online';
+  static async sendMessage(to: string, content: string): Promise<WhatsAppMessage> {
+    if (!this.connectionState.isConnected) {
+      throw new Error('WhatsApp is not connected');
+    }
+    
+    console.log(`Sending message to ${to}: ${content}`);
+    
+    // Simulate message sending
+    const message: WhatsAppMessage = {
+      id: `msg_${Date.now()}`,
+      from: auth.currentUser?.phoneNumber || 'unknown',
+      to,
+      content,
+      timestamp: Date.now(),
+      type: 'text',
+      status: 'sent',
+      isFromMe: true
+    };
+    
+    // Emit message sent event
+    whatsAppEvents.emit('messageSent', message);
+    
+    return message;
+  }
+  
+  /**
+   * Get conversation history
+   */
+  static async getConversationHistory(contact: string, limit: number = 50): Promise<WhatsAppMessage[]> {
+    // This would normally fetch message history from the backend
+    // For demo purposes, we'll return mock data
+    
+    const messages: WhatsAppMessage[] = [];
+    
+    // Generate some mock messages
+    for (let i = 0; i < limit; i++) {
+      const isFromMe = i % 3 === 0;
+      messages.push({
+        id: `msg_${Date.now() - i * 60000}`,
+        from: isFromMe ? (auth.currentUser?.phoneNumber || 'me') : contact,
+        to: isFromMe ? contact : (auth.currentUser?.phoneNumber || 'me'),
+        content: `This is message #${i + 1} in the conversation`,
+        timestamp: Date.now() - i * 60000,
+        type: 'text',
+        status: 'read',
+        isFromMe
+      });
+    }
+    
+    return messages.sort((a, b) => a.timestamp - b.timestamp);
+  }
+  
+  /**
+   * Get contacts list
+   */
+  static async getContacts(): Promise<WhatsAppContact[]> {
+    // This would normally fetch contacts from the backend
+    // For demo purposes, we'll return mock data
+    
+    const contacts: WhatsAppContact[] = [];
+    
+    // Generate some mock contacts
+    for (let i = 0; i < 20; i++) {
+      contacts.push({
+        id: `contact_${i}`,
+        name: `Contact ${i}`,
+        phoneNumber: `+123456789${i.toString().padStart(2, '0')}`,
+        lastSeen: i % 2 === 0 ? Date.now() - i * 3600000 : undefined,
+        about: i % 3 === 0 ? `About contact ${i}` : undefined
+      });
+    }
+    
+    return contacts;
   }
 }

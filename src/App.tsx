@@ -5,7 +5,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Conversations from "./pages/Conversations";
-import AISettings from "./pages/AISettings";
 import Settings from "./pages/Settings";
 import Contacts from "./pages/Contacts";
 import Analytics from "./pages/Analytics";
@@ -17,6 +16,7 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import LogActivity from "./pages/LogActivity";
 import BotManagement from "./pages/BotManagement";
+import BotSettings from "./pages/BotSettings";
 import AuthMiddleware from "./components/AuthMiddleware";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Toaster } from "./components/ui/toaster";
@@ -68,11 +68,6 @@ function App() {
               <Conversations />
             </AuthMiddleware>
           } />
-          <Route path="/ai-settings" element={
-            <AuthMiddleware requireAuth={true}>
-              <AISettings />
-            </AuthMiddleware>
-          } />
           <Route path="/contacts" element={
             <AuthMiddleware requireAuth={true}>
               <Contacts />
@@ -101,6 +96,11 @@ function App() {
           <Route path="/bot-management" element={
             <AuthMiddleware requireAuth={true}>
               <BotManagement />
+            </AuthMiddleware>
+          } />
+          <Route path="/bot-settings/:botId" element={
+            <AuthMiddleware requireAuth={true}>
+              <BotSettings />
             </AuthMiddleware>
           } />
           

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Plus, Trash2, Bot, MessageSquare, BotOff, QrCode, Loader2 } from "lucide-react";
+import { Check, Plus, Trash2, Bot, MessageSquare, BotOff, QrCode, Loader2, Settings } from "lucide-react";
 import { 
   Card, 
   CardContent, 
@@ -61,10 +61,12 @@ const BotManagement = () => {
 
   const handleToggleBot = async (bot: UserBot) => {
     try {
-      if (bot.type === 'whatsapp') {
-        await WhatsAppService.toggleBotStatus(!bot.isConnected);
-      } else {
-        await UserService.toggleBotStatus(bot.id, !bot.isConnected);
+      const result = await UserService.toggleBotStatus(bot.id, !bot.isConnected);
+      
+      // If we're turning a bot on, show the QR code
+      if (!bot.isConnected) {
+        setSelectedBot(bot);
+        setShowQrCode(true);
       }
       
       // Refresh bot list
@@ -77,12 +79,6 @@ const BotManagement = () => {
           ? `${bot.name} has been turned off` 
           : `${bot.name} has been turned on`,
       });
-      
-      // Show QR code when a WhatsApp bot is activated
-      if (bot.type === 'whatsapp' && !bot.isConnected) {
-        setSelectedBot(bot);
-        setShowQrCode(true);
-      }
     } catch (error) {
       console.error("Error toggling bot status:", error);
       toast({
@@ -109,6 +105,10 @@ const BotManagement = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleOpenBotSettings = (botId: string) => {
+    navigate(`/bot-settings/${botId}`);
   };
 
   return (
@@ -199,18 +199,13 @@ const BotManagement = () => {
                       </span>
                     </div>
                     <div className="flex gap-2">
-                      {bot.type === 'whatsapp' && bot.status === 'online' && (
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          onClick={() => {
-                            setSelectedBot(bot);
-                            setShowQrCode(true);
-                          }}
-                        >
-                          <QrCode className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => handleOpenBotSettings(bot.id)}
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="icon"
@@ -256,7 +251,7 @@ interface CreateBotDialogProps {
 const CreateBotDialog = ({ onBotCreated }: CreateBotDialogProps) => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [type, setType] = useState("whatsapp");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
 
@@ -270,17 +265,40 @@ const CreateBotDialog = ({ onBotCreated }: CreateBotDialogProps) => {
       return;
     }
 
+    if (!phoneNumber.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a phone number for your bot",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsCreating(true);
-      const newBot = await UserService.createBot({
-        name: name.trim(),
-        type: type,
+      
+      // Use the correct endpoint to create bot
+      const response = await fetch('http://localhost:3000/api/v1/bots/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          'nama bot': name.trim(),
+          'nomor telpon': phoneNumber.trim(),
+        }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create bot');
+      }
+      
+      const newBot = await response.json();
       
       onBotCreated(newBot);
       setOpen(false);
       setName("");
-      setType("whatsapp");
+      setPhoneNumber("");
       
       toast({
         title: "Bot Created",
@@ -324,17 +342,16 @@ const CreateBotDialog = ({ onBotCreated }: CreateBotDialogProps) => {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="type">Bot Type</Label>
-            <Select value={type} onValueChange={setType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select bot type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                <SelectItem value="telegram">Telegram</SelectItem>
-                <SelectItem value="messenger">Facebook Messenger</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="phoneNumber">Phone Number</Label>
+            <Input
+              id="phoneNumber"
+              placeholder="+1234567890"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter the phone number in international format (e.g., +1234567890)
+            </p>
           </div>
         </div>
         <DialogFooter>
