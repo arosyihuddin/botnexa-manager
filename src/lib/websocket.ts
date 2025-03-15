@@ -7,7 +7,9 @@ type WebSocketMessageType =
   | 'authenticated'
   | 'message'
   | 'disconnected'
-  | 'error';
+  | 'error'
+  | 'whatsapp_status'
+  | 'whatsapp_qr';
 
 interface WebSocketMessage {
   type: WebSocketMessageType;

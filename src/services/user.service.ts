@@ -1,6 +1,7 @@
 
 import { ApiService } from "./api.service";
 import { auth } from "@/lib/firebase";
+import { updateProfile, updateEmail } from "firebase/auth";
 import { UserProfile, saveUserToSupabase, getUserProfile } from "@/lib/supabase";
 
 export interface UserSettings {
@@ -30,16 +31,16 @@ export class UserService extends ApiService {
     
     // Update relevant fields in Firebase if applicable
     if (profileData.full_name) {
-      await user.updateProfile({ displayName: profileData.full_name });
+      await updateProfile(user, { displayName: profileData.full_name });
     }
     
     if (profileData.avatar_url) {
-      await user.updateProfile({ photoURL: profileData.avatar_url });
+      await updateProfile(user, { photoURL: profileData.avatar_url });
     }
     
     // Update email if provided and different
     if (profileData.email && profileData.email !== user.email) {
-      await user.updateEmail(profileData.email);
+      await updateEmail(user, profileData.email);
     }
     
     // Update phone if provided and different

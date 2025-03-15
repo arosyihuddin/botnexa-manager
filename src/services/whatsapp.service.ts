@@ -21,19 +21,17 @@ export class WhatsAppService extends ApiService {
    */
   static initialize(): void {
     // Set up WebSocket message handling
-    whatsAppWebSocket.addMessageListener('whatsapp_status', (data) => {
+    whatsAppWebSocket.subscribe('whatsapp_status', (data) => {
       this.handleStatusUpdate(data);
     });
     
-    whatsAppWebSocket.addMessageListener('whatsapp_qr', (data) => {
+    whatsAppWebSocket.subscribe('whatsapp_qr', (data) => {
       this.handleQRUpdate(data.qrCode);
     });
     
     // Request initial status when WebSocket connects
-    whatsAppWebSocket.addConnectListener(() => {
-      whatsAppWebSocket.send({
-        type: 'get_whatsapp_status'
-      });
+    whatsAppWebSocket.subscribe('ready', () => {
+      whatsAppWebSocket.sendMessage('get_whatsapp_status');
     });
   }
   
