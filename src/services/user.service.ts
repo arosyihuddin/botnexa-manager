@@ -118,7 +118,14 @@ export class UserService extends ApiService {
     const user = auth.currentUser;
     if (!user) return [];
     
-    return this.getUserBots(user.uid);
+    return this.getUserBotsById(user.uid);
+  }
+
+  /**
+   * Get user bots by user ID
+   */
+  static async getUserBotsById(userId: string): Promise<UserBot[]> {
+    return this.apiRequest<UserBot[]>(`/users/${userId}/bots`);
   }
 
   /**

@@ -2,6 +2,7 @@
 import { ApiService } from "./api.service";
 import { whatsAppWebSocket } from "@/lib/websocket";
 import { updateWhatsAppConnectionStatus } from "@/lib/supabase";
+import { auth } from "@/lib/firebase";
 
 export interface WhatsAppStatus {
   connected: boolean;

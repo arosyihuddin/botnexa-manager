@@ -9,12 +9,135 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  CheckCircle2, ChevronRight, BrainCircuit, Calendar
+  CheckCircle2, ChevronRight, BrainCircuit, Calendar, MessageSquare, Check
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import QRScanner from "@/components/QRScanner";
 import ChatHistory from "@/components/ChatHistory";
 import { PageTransition } from "@/lib/animations";
 import DashboardLayout from "@/components/DashboardLayout";
+
+// Sample chat data - in a real app, this would come from an API
+const recentChats = [
+  {
+    id: "1",
+    name: "John Smith",
+    lastMessage: "I need help with my order",
+    time: "2m ago",
+    unread: 2,
+    messages: [
+      {
+        id: "1-1",
+        content: "Hello, I need help with my order #12345",
+        sender: "contact",
+        timestamp: "10:30 AM"
+      },
+      {
+        id: "1-2",
+        content: "What seems to be the issue with your order?",
+        sender: "user",
+        timestamp: "10:32 AM",
+        status: "read"
+      },
+      {
+        id: "1-3",
+        content: "I ordered the wrong size and would like to change it",
+        sender: "contact",
+        timestamp: "10:33 AM"
+      },
+      {
+        id: "1-4",
+        content: "I need help with my order",
+        sender: "contact",
+        timestamp: "10:35 AM"
+      }
+    ]
+  },
+  {
+    id: "2",
+    name: "Sarah Johnson",
+    lastMessage: "Thank you for the information",
+    time: "1h ago",
+    unread: 0,
+    messages: [
+      {
+        id: "2-1",
+        content: "Hi, I'm looking for information about your premium plan",
+        sender: "contact",
+        timestamp: "Yesterday"
+      },
+      {
+        id: "2-2",
+        content: "Our premium plan includes 24/7 support, unlimited messages, and priority feature access.",
+        sender: "user",
+        timestamp: "Yesterday",
+        status: "read"
+      },
+      {
+        id: "2-3",
+        content: "That sounds great! Can you send me a detailed pricing sheet?",
+        sender: "contact",
+        timestamp: "Yesterday"
+      },
+      {
+        id: "2-4",
+        content: "Of course! I'll send it right away. Anything else you'd like to know?",
+        sender: "user",
+        timestamp: "Yesterday",
+        status: "read"
+      },
+      {
+        id: "2-5",
+        content: "Thank you for the information",
+        sender: "contact",
+        timestamp: "1h ago"
+      }
+    ]
+  },
+  {
+    id: "3",
+    name: "Michael Brown",
+    lastMessage: "When will my order arrive?",
+    time: "3h ago",
+    unread: 1,
+    messages: [
+      {
+        id: "3-1",
+        content: "I placed an order yesterday, #54321",
+        sender: "contact",
+        timestamp: "Yesterday"
+      },
+      {
+        id: "3-2",
+        content: "I can see your order has been processed. It should ship today.",
+        sender: "user",
+        timestamp: "Yesterday",
+        status: "read"
+      },
+      {
+        id: "3-3",
+        content: "When will my order arrive?",
+        sender: "contact",
+        timestamp: "3h ago"
+      }
+    ]
+  },
+  {
+    id: "4",
+    name: "Emily Davis",
+    lastMessage: "I'd like to schedule a call",
+    time: "1d ago",
+    unread: 0,
+    messages: [
+      {
+        id: "4-1",
+        content: "I'd like to schedule a call to discuss your services",
+        sender: "contact",
+        timestamp: "1d ago"
+      }
+    ]
+  }
+];
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -142,12 +265,72 @@ const ConnectedDashboard = () => {
           
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="col-span-1">
-              <CardHeader>
-                <CardTitle>Conversations</CardTitle>
-                <CardDescription>Recent chat history with your bot</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle>Recent Conversations</CardTitle>
+                  <CardDescription>Latest chat messages</CardDescription>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-xs text-muted-foreground"
+                  onClick={() => navigate('/conversations')}
+                >
+                  View all
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
               </CardHeader>
               <CardContent className="p-0">
-                <ChatHistory />
+                <ScrollArea className="h-[300px]">
+                  <div className="space-y-0">
+                    {recentChats.map((chat) => (
+                      <div
+                        key={chat.id}
+                        className="w-full text-left px-4 py-3 border-b hover:bg-muted/30 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/conversations?chat=${chat.id}`)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage 
+                              src={`https://i.pravatar.cc/150?u=${chat.id}`} 
+                              alt={chat.name} 
+                            />
+                            <AvatarFallback>{chat.name[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <p className={`font-medium truncate ${chat.unread > 0 ? "font-semibold" : ""}`}>
+                                {chat.name}
+                              </p>
+                              <span className="text-xs text-muted-foreground">
+                                {chat.time}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <p className={`text-sm text-muted-foreground truncate ${chat.unread > 0 ? "text-foreground font-medium" : ""}`}>
+                                {chat.lastMessage}
+                              </p>
+                              {chat.unread > 0 ? (
+                                <Badge className="ml-2 bg-botnexa-500 hover:bg-botnexa-600">
+                                  {chat.unread}
+                                </Badge>
+                              ) : (
+                                chat.messages.length > 0 && 
+                                chat.messages[chat.messages.length - 1].sender === "user" && 
+                                chat.messages[chat.messages.length - 1].status === "read" && (
+                                  <div className="flex ml-2">
+                                    <Check className="h-3 w-3 text-botnexa-500" />
+                                    <Check className="h-3 w-3 -ml-1 text-botnexa-500" />
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               </CardContent>
             </Card>
             
