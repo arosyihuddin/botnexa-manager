@@ -1,9 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
-import { User } from 'firebase/auth';
 
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ywskcjllsdbnapecmfkg.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3c2tjamxsc2RibmFwZWNtZmtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkwODQ1NzgsImV4cCI6MjA1NDY2MDU3OH0.sHTtQy6eHbxNi3REi7B8AnfEoDAuoH1d0kMiXZpPLt0';
+import { createClient, User as SupabaseUser } from '@supabase/supabase-js';
+
+// Initialize Supabase client with provided credentials
+const supabaseUrl = 'https://ywskcjllsdbnapecmfkg.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3c2tjamxsc2RibmFwZWNtZmtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkwODQ1NzgsImV4cCI6MjA1NDY2MDU3OH0.sHTtQy6eHbxNi3REi7B8AnfEoDAuoH1d0kMiXZpPLt0';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -19,25 +19,41 @@ export interface UserProfile {
   subscription_tier?: 'free' | 'premium' | 'business';
 }
 
-// Save Firebase user to Supabase database
-export const saveUserToSupabase = async (firebaseUser: User): Promise<UserProfile | null> => {
-  if (!firebaseUser) return null;
+// Get the current user from Supabase
+export const getCurrentUser = async (): Promise<SupabaseUser | null> => {
+  const { data } = await supabase.auth.getUser();
+  return data?.user || null;
+};
 
-  const userData = {
-    id: firebaseUser.uid,
-    email: firebaseUser.email || '',
-    full_name: firebaseUser.displayName || '',
-    avatar_url: firebaseUser.photoURL || '',
-    phone_number: firebaseUser.phoneNumber || '',
-    whatsapp_connected: false,
-    subscription_tier: 'free' as const,
-  };
+// Get user profile from Supabase
+export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single();
 
+  if (error) {
+    console.error('Error fetching user profile:', error);
+    return null;
+  }
+
+  return data;
+};
+
+// Save user profile to Supabase
+export const saveUserToSupabase = async (userData: {
+  id: string;
+  email: string;
+  full_name?: string;
+  avatar_url?: string;
+  phone_number?: string;
+}): Promise<UserProfile | null> => {
   // Check if user already exists
   const { data: existingUser, error: fetchError } = await supabase
     .from('users')
     .select('*')
-    .eq('id', firebaseUser.uid)
+    .eq('id', userData.id)
     .single();
 
   if (fetchError && fetchError.code !== 'PGRST116') {
@@ -47,9 +63,15 @@ export const saveUserToSupabase = async (firebaseUser: User): Promise<UserProfil
 
   // If user doesn't exist, create them
   if (!existingUser) {
+    const newUser = {
+      ...userData,
+      whatsapp_connected: false,
+      subscription_tier: 'free' as const,
+    };
+
     const { data, error } = await supabase
       .from('users')
-      .insert([userData])
+      .insert([newUser])
       .select()
       .single();
 
@@ -65,34 +87,18 @@ export const saveUserToSupabase = async (firebaseUser: User): Promise<UserProfil
   const { data, error } = await supabase
     .from('users')
     .update({
-      email: firebaseUser.email || existingUser.email,
-      full_name: firebaseUser.displayName || existingUser.full_name,
-      avatar_url: firebaseUser.photoURL || existingUser.avatar_url,
-      phone_number: firebaseUser.phoneNumber || existingUser.phone_number,
+      email: userData.email || existingUser.email,
+      full_name: userData.full_name || existingUser.full_name,
+      avatar_url: userData.avatar_url || existingUser.avatar_url,
+      phone_number: userData.phone_number || existingUser.phone_number,
     })
-    .eq('id', firebaseUser.uid)
+    .eq('id', userData.id)
     .select()
     .single();
 
   if (error) {
     console.error('Error updating user in Supabase:', error);
     return existingUser;
-  }
-
-  return data;
-};
-
-// Get user profile from Supabase
-export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .single();
-
-  if (error) {
-    console.error('Error fetching user profile:', error);
-    return null;
   }
 
   return data;

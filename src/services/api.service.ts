@@ -1,5 +1,5 @@
 
-import { auth } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/ui/use-toast";
 
 // Base API URL - should be stored in environment variables in production
@@ -26,8 +26,8 @@ export class ApiService {
       // Add authentication token if required
       if (requiresAuth) {
         // Get current user's token for authentication
-        const user = auth.currentUser;
-        const token = user ? await user.getIdToken() : null;
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
         
         if (!token) {
           throw new Error('Authentication required');
@@ -84,8 +84,8 @@ export class ApiService {
     onProgress?: (progress: number) => void
   ): Promise<any> {
     try {
-      const user = auth.currentUser;
-      const token = user ? await user.getIdToken() : null;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
       
       if (!token) {
         throw new Error('Authentication required');

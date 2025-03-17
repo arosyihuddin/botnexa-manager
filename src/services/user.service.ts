@@ -1,8 +1,6 @@
 
 import { ApiService } from "./api.service";
-import { auth } from "@/lib/firebase";
-import { updateProfile, updateEmail } from "firebase/auth";
-import { saveUserToSupabase } from "@/lib/supabase";
+import { supabase, saveUserToSupabase } from "@/lib/supabase";
 
 export interface UserProfile {
   id: string;
@@ -28,6 +26,7 @@ export interface UserBot {
   isConnected: boolean;
   lastConnection?: string;
   type: string;
+  phone_number?: string;
 }
 
 export class UserService extends ApiService {
@@ -35,12 +34,13 @@ export class UserService extends ApiService {
    * Get current user profile from API
    */
   static async getCurrentUserProfile(): Promise<UserProfile | null> {
-    const user = auth.currentUser;
+    const { data } = await supabase.auth.getUser();
+    const user = data?.user;
     if (!user) return null;
     
     try {
       // Get user profile from API
-      return await this.getUserById(user.uid);
+      return await this.getUserById(user.id);
     } catch (error) {
       console.error("Error fetching user profile from API", error);
       throw error;
@@ -48,24 +48,26 @@ export class UserService extends ApiService {
   }
   
   /**
-   * Update user profile in both Firebase and API backend
+   * Update user profile in both Supabase and API backend
    */
   static async updateUserProfile(profileData: Partial<UserProfile>): Promise<UserProfile | null> {
-    const user = auth.currentUser;
+    const { data } = await supabase.auth.getUser();
+    const user = data?.user;
     if (!user) return null;
     
-    // Update relevant fields in Firebase if applicable
-    if (profileData.full_name) {
-      await updateProfile(user, { displayName: profileData.full_name });
-    }
-    
-    if (profileData.avatar_url) {
-      await updateProfile(user, { photoURL: profileData.avatar_url });
+    // Update relevant fields in Supabase auth if applicable
+    if (profileData.full_name || profileData.avatar_url) {
+      await supabase.auth.updateUser({ 
+        data: { 
+          full_name: profileData.full_name,
+          avatar_url: profileData.avatar_url 
+        } 
+      });
     }
     
     // Update email if provided and different
     if (profileData.email && profileData.email !== user.email) {
-      await updateEmail(user, profileData.email);
+      await supabase.auth.updateUser({ email: profileData.email });
     }
     
     // Update API backend
@@ -113,10 +115,11 @@ export class UserService extends ApiService {
    * Get user bots
    */
   static async getUserBots(): Promise<UserBot[]> {
-    const user = auth.currentUser;
+    const { data } = await supabase.auth.getUser();
+    const user = data?.user;
     if (!user) return [];
     
-    return this.apiRequest<UserBot[]>(`/users/${user.uid}/bots`);
+    return this.apiRequest<UserBot[]>(`/users/${user.id}/bots`);
   }
 
   /**
@@ -140,8 +143,8 @@ export class UserService extends ApiService {
   /**
    * Create a new bot
    */
-  static async createBot(botData: { name: string, type: string }): Promise<UserBot> {
-    return this.apiRequest<UserBot>('/bots', 'POST', botData);
+  static async createBot(botData: { name: string, phone_number: string }): Promise<UserBot> {
+    return this.apiRequest<UserBot>('/bots/create', 'POST', botData);
   }
   
   /**
@@ -152,7 +155,7 @@ export class UserService extends ApiService {
   }
   
   /**
-   * Handle user registration with Firebase and Supabase
+   * Handle user registration with Supabase
    */
   static async registerUser(userData: { 
     email: string; 
@@ -163,21 +166,29 @@ export class UserService extends ApiService {
       // Register with API first
       const apiResponse = await this.register(userData);
       
-      // Create user in Firebase
-      const userCredential = await auth.createUserWithEmailAndPassword(
-        userData.email, 
-        userData.password
-      );
-      
-      // Update profile in Firebase
-      await updateProfile(userCredential.user, {
-        displayName: userData.fullName
+      // Create user in Supabase
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            full_name: userData.fullName,
+          }
+        }
       });
       
-      // Save user data to Supabase via our helper
-      await saveUserToSupabase(userCredential.user);
+      if (authError) throw authError;
       
-      return userCredential.user;
+      // Save user data to Supabase profile table
+      if (authData.user) {
+        await saveUserToSupabase({
+          id: authData.user.id,
+          email: authData.user.email || '',
+          full_name: userData.fullName,
+        });
+      }
+      
+      return authData.user;
     } catch (error) {
       console.error("Error registering user:", error);
       throw error;
@@ -185,23 +196,30 @@ export class UserService extends ApiService {
   }
   
   /**
-   * Handle user login with Firebase and Supabase
+   * Handle user login with Supabase
    */
   static async loginUser(email: string, password: string): Promise<any> {
     try {
       // Login with API
       const apiResponse = await this.login(email, password);
       
-      // Sign in with Firebase
-      const userCredential = await auth.signInWithEmailAndPassword(
-        email, 
+      // Sign in with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
         password
-      );
+      });
       
-      // Update or create Supabase record
-      await saveUserToSupabase(userCredential.user);
+      if (authError) throw authError;
       
-      return userCredential.user;
+      // Update or create Supabase profile record
+      if (authData.user) {
+        await saveUserToSupabase({
+          id: authData.user.id,
+          email: authData.user.email || '',
+        });
+      }
+      
+      return authData.user;
     } catch (error) {
       console.error("Error logging in:", error);
       throw error;

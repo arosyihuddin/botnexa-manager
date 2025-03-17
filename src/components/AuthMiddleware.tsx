@@ -1,7 +1,7 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { auth } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -19,7 +19,9 @@ const AuthMiddleware = ({ children, requireAuth = true }: AuthMiddlewareProps) =
   const publicPaths = ['/login', '/register', '/forgot-password', '/terms-of-service', '/privacy-policy'];
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const user = session?.user;
+      
       if (!user && requireAuth) {
         toast({
           title: "Authentication required",
@@ -36,7 +38,9 @@ const AuthMiddleware = ({ children, requireAuth = true }: AuthMiddlewareProps) =
     });
 
     // Cleanup subscription on unmount
-    return () => unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate, toast, requireAuth, location.pathname]);
 
   if (loading) {

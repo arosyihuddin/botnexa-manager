@@ -8,8 +8,8 @@ import { Card } from "@/components/ui/card";
 import { EyeIcon, ArrowLeft, EyeOffIcon, LockIcon, MailIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageTransition } from "@/lib/animations";
-import { auth, googleProvider } from "@/lib/firebase";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { supabase } from "@/lib/supabase";
+import { UserService } from "@/services/user.service";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -25,8 +25,8 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Firebase email/password authentication
-      await signInWithEmailAndPassword(auth, email, password);
+      // Login with Supabase and API
+      await UserService.loginUser(email, password);
       
       // Redirect to dashboard on successful login
       navigate("/dashboard");
@@ -51,14 +51,19 @@ const Login = () => {
     
     try {
       // Sign in with Google popup
-      await signInWithPopup(auth, googleProvider);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/dashboard'
+        }
+      });
       
-      // Redirect to dashboard on successful login
-      navigate("/dashboard");
+      if (error) throw error;
       
+      // The redirect will happen automatically
       toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in with Google.",
+        title: "Redirecting to Google",
+        description: "Please complete the sign-in process.",
       });
     } catch (error) {
       toast({
@@ -67,7 +72,6 @@ const Login = () => {
         variant: "destructive",
       });
       console.error("Google sign-in error:", error);
-    } finally {
       setIsGoogleLoading(false);
     }
   };
