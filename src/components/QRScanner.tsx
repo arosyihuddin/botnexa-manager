@@ -9,9 +9,10 @@ import { UserService } from "@/services/user.service";
 interface QRScannerProps {
   botId: string;
   onScanComplete?: () => void;
+  onConnected?: () => void;
 }
 
-const QRScanner = ({ botId, onScanComplete }: QRScannerProps) => {
+const QRScanner = ({ botId, onScanComplete, onConnected }: QRScannerProps) => {
   const [isActive, setIsActive] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -49,8 +50,9 @@ const QRScanner = ({ botId, onScanComplete }: QRScannerProps) => {
           WhatsAppService.listenForConnection(botId, (connected) => {
             setIsConnected(connected);
             setQrCode(null);
-            if (connected && onScanComplete) {
-              onScanComplete();
+            if (connected) {
+              if (onScanComplete) onScanComplete();
+              if (onConnected) onConnected();
             }
           });
         }

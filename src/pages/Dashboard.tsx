@@ -208,7 +208,7 @@ const ConnectionSetup = ({ userBots, onConnect }: ConnectionSetupProps) => {
       </div>
       
       {whatsappBot ? (
-        <QRScanner onConnected={onConnect} />
+        <QRScanner botId={whatsappBot.id} onConnected={onConnect} />
       ) : (
         <Card className="text-center p-6 space-y-4">
           <div className="flex flex-col items-center">

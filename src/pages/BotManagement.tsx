@@ -232,7 +232,7 @@ const BotManagement = () => {
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
-              <QRScanner />
+              {selectedBot && <QRScanner botId={selectedBot.id} />}
             </div>
             <DialogFooter>
               <Button onClick={() => setShowQrCode(false)}>Close</Button>

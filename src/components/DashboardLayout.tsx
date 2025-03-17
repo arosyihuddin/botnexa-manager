@@ -13,7 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/lib/animations";
 import { ThemeToggle } from "./ThemeToggle";
 import { cn } from "@/lib/utils";
-import { auth } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
 interface DashboardLayoutProps {
@@ -37,7 +37,7 @@ const DashboardLayout = ({ children, title, showBackButton, onBack }: DashboardL
   
   const handleLogout = async () => {
     try {
-      await auth.signOut();
+      await supabase.auth.signOut();
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account",
@@ -66,7 +66,6 @@ const DashboardLayout = ({ children, title, showBackButton, onBack }: DashboardL
       <div className="min-h-screen bg-background flex flex-col">
         <SidebarProvider defaultOpen={!isMobile}>
           <div className="flex min-h-screen w-full">
-            {/* Sidebar */}
             <Sidebar className="border-r border-border z-30">
               <SidebarHeader className="py-4 px-4 flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -152,9 +151,7 @@ const DashboardLayout = ({ children, title, showBackButton, onBack }: DashboardL
               </SidebarFooter>
             </Sidebar>
             
-            {/* Main Content */}
             <div className="flex-1 flex flex-col min-h-0 w-full">
-              {/* Header */}
               <header className="h-14 border-b border-border flex items-center justify-between px-4 sticky top-0 bg-background/95 backdrop-blur-sm z-20">
                 <div className="flex items-center gap-4">
                   {isMobile && (
@@ -196,7 +193,6 @@ const DashboardLayout = ({ children, title, showBackButton, onBack }: DashboardL
                 </div>
               </header>
               
-              {/* Content */}
               <main className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 w-full">
                 {children}
               </main>
