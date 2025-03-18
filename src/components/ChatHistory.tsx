@@ -71,7 +71,7 @@ const ChatHistory = ({ className, contactName }: ChatHistoryProps) => {
       
       <ScrollArea className="h-[400px]">
         <div className="p-4 space-y-4">
-          {conversations.map((message, index) => (
+          {conversations.map((message) => (
             <div key={message.id} className={cn(
               "flex gap-3",
               message.sender === "bot" ? "justify-start" : "justify-end"
