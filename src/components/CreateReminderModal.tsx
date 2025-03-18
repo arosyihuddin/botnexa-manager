@@ -11,7 +11,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Popover,
@@ -23,23 +22,33 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Contact, Reminder } from "@/types/app-types";
 
 interface CreateReminderModalProps {
-  onCreateReminder: (reminder: any) => void;
+  onCreateReminder: (reminder: Partial<Reminder>) => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  contacts: Contact[];
 }
 
-const CreateReminderModal = ({ onCreateReminder }: CreateReminderModalProps) => {
-  const [open, setOpen] = useState(false);
+const CreateReminderModal = ({ 
+  onCreateReminder, 
+  open, 
+  onOpenChange, 
+  contacts 
+}: CreateReminderModalProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [time, setTime] = useState("");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [contactId, setContactId] = useState("");
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title || !date || !time) {
+    if (!title || !date || !time || !contactId) {
       toast({
         title: "Missing fields",
         description: "Please fill all required fields",
@@ -48,14 +57,23 @@ const CreateReminderModal = ({ onCreateReminder }: CreateReminderModalProps) => 
       return;
     }
     
-    const newReminder = {
-      id: crypto.randomUUID(),
+    // Get contact name from ID
+    const selectedContact = contacts.find(contact => contact.id === contactId);
+    
+    const newReminder: Partial<Reminder> = {
       title,
       description,
-      date: date ? format(date, "yyyy-MM-dd") : "",
-      time,
-      completed: false,
-      createdAt: new Date().toISOString(),
+      dueDate: date ? new Date(
+        date.getFullYear(), 
+        date.getMonth(), 
+        date.getDate(),
+        parseInt(time.split(':')[0]),
+        parseInt(time.split(':')[1])
+      ).toISOString() : "",
+      contactId,
+      contactName: selectedContact?.name || "",
+      priority,
+      completed: false
     };
     
     onCreateReminder(newReminder);
@@ -69,14 +87,13 @@ const CreateReminderModal = ({ onCreateReminder }: CreateReminderModalProps) => 
     setDescription("");
     setDate(undefined);
     setTime("");
-    setOpen(false);
+    setPriority("medium");
+    setContactId("");
+    onOpenChange(false);
   };
   
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="w-full md:w-auto">Create New Reminder</Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create New Reminder</DialogTitle>
@@ -148,6 +165,54 @@ const CreateReminderModal = ({ onCreateReminder }: CreateReminderModalProps) => 
                 />
               </div>
             </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="priority">Priority</Label>
+            <div className="grid grid-cols-3 gap-2">
+              <Button 
+                type="button"
+                variant={priority === "low" ? "default" : "outline"}
+                className={priority === "low" ? "bg-green-500 hover:bg-green-600" : ""}
+                onClick={() => setPriority("low")}
+              >
+                Low
+              </Button>
+              <Button 
+                type="button"
+                variant={priority === "medium" ? "default" : "outline"}
+                className={priority === "medium" ? "bg-amber-500 hover:bg-amber-600" : ""}
+                onClick={() => setPriority("medium")}
+              >
+                Medium
+              </Button>
+              <Button 
+                type="button"
+                variant={priority === "high" ? "default" : "outline"}
+                className={priority === "high" ? "bg-red-500 hover:bg-red-600" : ""}
+                onClick={() => setPriority("high")}
+              >
+                High
+              </Button>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="contact">Contact</Label>
+            <select 
+              id="contact"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={contactId}
+              onChange={(e) => setContactId(e.target.value)}
+              required
+            >
+              <option value="">Select a contact</option>
+              {contacts.map(contact => (
+                <option key={contact.id} value={contact.id}>
+                  {contact.name}
+                </option>
+              ))}
+            </select>
           </div>
           
           <DialogFooter>

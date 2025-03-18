@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Calendar as CalendarIcon, Search, Plus, Check, Clock, ChevronDown, User, Calendar, CalendarCheck, AlertCircle } from "lucide-react";
+import { Search, Plus, Check, Clock, User, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -127,7 +127,7 @@ const Reminders = () => {
                   className="w-full"
                   onClick={() => setSelectedDate(new Date())}
                 >
-                  <CalendarCheck className="mr-2 h-4 w-4" />
+                  <User className="mr-2 h-4 w-4" />
                   Today
                 </Button>
               </CardFooter>
@@ -183,7 +183,7 @@ const Reminders = () => {
                   sortedDateKeys.map(dateKey => (
                     <div key={dateKey} className="mb-6 last:mb-0">
                       <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <Clock className="mr-2 h-4 w-4" />
                         {format(new Date(dateKey), "EEEE, MMMM d, yyyy")}
                       </h3>
                       
