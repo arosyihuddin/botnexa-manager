@@ -61,6 +61,10 @@ const SheetContent = React.forwardRef<
     <SheetPrimitive.Content
       ref={ref}
       className={cn(sheetVariants({ side }), className)}
+      onPointerDownOutside={(e) => {
+        // Prevent closing sheet when clicking outside
+        e.preventDefault();
+      }}
       {...props}
     >
       {children}

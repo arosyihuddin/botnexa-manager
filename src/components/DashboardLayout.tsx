@@ -1,4 +1,3 @@
-
 import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
@@ -30,7 +29,6 @@ const DashboardLayout = ({ children, title, showBackButton, onBack }: DashboardL
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
   const { toast } = useToast();
   
-  // Update sidebar state when mobile status changes
   useEffect(() => {
     setIsSidebarOpen(!isMobile);
   }, [isMobile]);
@@ -74,11 +72,6 @@ const DashboardLayout = ({ children, title, showBackButton, onBack }: DashboardL
                   </div>
                   <span className="font-bold text-xl">BotNexa</span>
                 </div>
-                {isMobile && (
-                  <SidebarTrigger>
-                    <Menu className="h-5 w-5" />
-                  </SidebarTrigger>
-                )}
               </SidebarHeader>
               
               <SidebarContent className="px-2 py-2">
@@ -156,7 +149,7 @@ const DashboardLayout = ({ children, title, showBackButton, onBack }: DashboardL
                 <div className="flex items-center gap-4">
                   {isMobile && (
                     <SidebarTrigger>
-                      <X className="h-5 w-5" />
+                      <Menu className="h-5 w-5" />
                     </SidebarTrigger>
                   )}
                   

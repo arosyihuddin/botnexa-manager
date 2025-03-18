@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
@@ -42,11 +41,8 @@ const DialogContent = React.forwardRef<
       )}
       {...props}
       onPointerDownOutside={(e) => {
-        // Prevent backdrop clicks from closing modal if we're in a chat context
-        const isContactsModal = window.location.pathname.includes('conversations');
-        if (isContactsModal) {
-          e.preventDefault();
-        }
+        // Prevent closing modals when clicking outside
+        e.preventDefault();
       }}
     >
       {children}
