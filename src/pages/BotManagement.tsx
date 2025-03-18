@@ -1,7 +1,7 @@
 
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Check, Plus, Trash2, Bot, MessageSquare, BotOff, QrCode, Loader2, Settings } from "lucide-react";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import DashboardLayout from '@/components/DashboardLayout';
 import { 
   Card, 
   CardContent, 
@@ -9,376 +9,336 @@ import {
   CardFooter, 
   CardHeader, 
   CardTitle 
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { UserService, UserBot } from "@/services/user.service";
-import { WhatsAppService } from "@/services/whatsapp.service";
-import DashboardLayout from "@/components/DashboardLayout";
-import QRScanner from "@/components/QRScanner";
-import { PageTransition } from "@/lib/animations";
+} from '@/components/ui/select';
+import {
+  Search,
+  Plus,
+  Bot,
+  Settings,
+  MoreVertical,
+  Headphones,
+  ShoppingCart,
+  Calendar,
+  FileQuestion,
+  Package2,
+  Pencil,
+  Trash2,
+  ExternalLink,
+} from 'lucide-react';
+import { dummyBots } from '@/lib/dummy-data';
+import { BotInfo } from '@/types/app-types';
 
 const BotManagement = () => {
-  const [bots, setBots] = useState<UserBot[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedBot, setSelectedBot] = useState<UserBot | null>(null);
-  const [showQrCode, setShowQrCode] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const loadBots = async () => {
-      try {
-        setIsLoading(true);
-        const userBots = await UserService.getUserBots();
-        setBots(userBots);
-      } catch (error) {
-        console.error("Error loading bots:", error);
-        toast({
-          title: "Error",
-          description: "Could not load your bots. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadBots();
-  }, [toast]);
-
-  const handleToggleBot = async (bot: UserBot) => {
-    try {
-      const result = await UserService.toggleBotStatus(bot.id, !bot.isConnected);
-      
-      // If we're turning a bot on, show the QR code
-      if (!bot.isConnected) {
-        setSelectedBot(bot);
-        setShowQrCode(true);
-      }
-      
-      // Refresh bot list
-      const updatedBots = await UserService.getUserBots();
-      setBots(updatedBots);
-      
-      toast({
-        title: bot.isConnected ? "Bot Deactivated" : "Bot Activated",
-        description: bot.isConnected 
-          ? `${bot.name} has been turned off` 
-          : `${bot.name} has been turned on`,
-      });
-    } catch (error) {
-      console.error("Error toggling bot status:", error);
-      toast({
-        title: "Error",
-        description: "Could not change bot status. Please try again.",
-        variant: "destructive",
-      });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTab, setSelectedTab] = useState('all');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedBot, setSelectedBot] = useState<BotInfo | null>(null);
+  
+  const bots = dummyBots;
+  
+  const filteredBots = bots.filter(bot => {
+    const matchesSearch = bot.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          bot.description.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (selectedTab === 'all') return matchesSearch;
+    if (selectedTab === 'active') return matchesSearch && bot.status === 'active';
+    if (selectedTab === 'inactive') return matchesSearch && bot.status === 'inactive';
+    
+    // Filter by type
+    return matchesSearch && bot.type === selectedTab;
+  });
+  
+  const getBotIcon = (type: string) => {
+    switch (type) {
+      case 'support':
+        return <Headphones className="h-5 w-5 text-blue-500" />;
+      case 'sales':
+        return <ShoppingCart className="h-5 w-5 text-green-500" />;
+      case 'scheduler':
+        return <Calendar className="h-5 w-5 text-purple-500" />;
+      case 'faq':
+        return <FileQuestion className="h-5 w-5 text-amber-500" />;
+      case 'order':
+        return <Package2 className="h-5 w-5 text-red-500" />;
+      default:
+        return <Bot className="h-5 w-5 text-blue-500" />;
     }
   };
   
-  const handleDeleteBot = async (botId: string) => {
-    try {
-      await UserService.deleteBot(botId);
-      setBots(bots.filter(bot => bot.id !== botId));
-      toast({
-        title: "Bot Deleted",
-        description: "The bot has been successfully deleted.",
-      });
-    } catch (error) {
-      console.error("Error deleting bot:", error);
-      toast({
-        title: "Error",
-        description: "Could not delete the bot. Please try again.",
-        variant: "destructive",
-      });
-    }
+  const handleEditBot = (bot: BotInfo) => {
+    navigate(`/bot-settings/${bot.id}`);
   };
-
-  const handleOpenBotSettings = (botId: string) => {
-    navigate(`/bot-settings/${botId}`);
+  
+  const handleDeleteBot = (bot: BotInfo) => {
+    setSelectedBot(bot);
+    setIsDeleteModalOpen(true);
+  };
+  
+  const confirmDeleteBot = () => {
+    console.log(`Deleting bot: ${selectedBot?.id}`);
+    setIsDeleteModalOpen(false);
   };
 
   return (
     <DashboardLayout title="Bot Management">
-      <PageTransition>
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">Manage Your Bots</h2>
-              <p className="text-muted-foreground">
-                Create, configure, and control your messaging bots.
-              </p>
-            </div>
-            <CreateBotDialog onBotCreated={(newBot) => setBots([...bots, newBot])} />
-          </div>
-
-          {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="flex flex-col animate-pulse">
-                  <CardHeader className="bg-muted/20 h-24"></CardHeader>
-                  <CardContent className="flex-1 space-y-4 py-4">
-                    <div className="h-5 bg-muted/20 rounded"></div>
-                    <div className="h-4 bg-muted/20 rounded w-3/4"></div>
-                  </CardContent>
-                  <CardFooter className="bg-muted/10 h-16"></CardFooter>
-                </Card>
-              ))}
-            </div>
-          ) : bots.length === 0 ? (
-            <Card className="p-8 text-center">
-              <div className="flex flex-col items-center justify-center space-y-4">
-                <Bot className="h-12 w-12 text-muted-foreground" />
-                <h3 className="text-lg font-medium">No Bots Found</h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  You don't have any bots set up yet. Create your first bot to start automating your messaging.
-                </p>
-                <CreateBotDialog onBotCreated={(newBot) => setBots([...bots, newBot])} />
-              </div>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {bots.map((bot) => (
-                <Card key={bot.id} className="flex flex-col">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <Badge 
-                        variant={bot.status === 'online' ? "default" : "outline"}
-                        className={bot.status === 'online' ? "bg-green-500" : ""}
-                      >
-                        {bot.status === 'online' ? 'Online' : 'Offline'}
-                      </Badge>
-                      <Badge variant="outline">{bot.type}</Badge>
-                    </div>
-                    <CardTitle className="mt-2">{bot.name}</CardTitle>
-                    <CardDescription>
-                      {bot.isConnected 
-                        ? `Connected since ${bot.lastConnection || 'recently'}`
-                        : 'Not connected'
-                      }
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-1">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Status</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">
-                            {bot.isConnected ? 'Connected' : 'Disconnected'}
-                          </span>
-                          <div 
-                            className={`h-2.5 w-2.5 rounded-full ${
-                              bot.isConnected ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
-                            }`} 
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="border-t pt-4 flex justify-between">
-                    <div className="flex items-center gap-2">
-                      <Switch 
-                        checked={bot.status === 'online'} 
-                        onCheckedChange={() => handleToggleBot(bot)}
-                      />
-                      <span className="text-sm">
-                        {bot.status === 'online' ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        onClick={() => handleOpenBotSettings(bot.id)}
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        className="text-red-500"
-                        onClick={() => handleDeleteBot(bot.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-        
-        {/* QR Code Dialog */}
-        <Dialog open={showQrCode} onOpenChange={setShowQrCode}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Connect {selectedBot?.name}</DialogTitle>
-              <DialogDescription>
-                Scan this QR code with WhatsApp to connect your account
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              {selectedBot && <QRScanner botId={selectedBot.id} />}
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setShowQrCode(false)}>Close</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </PageTransition>
-    </DashboardLayout>
-  );
-};
-
-interface CreateBotDialogProps {
-  onBotCreated: (bot: UserBot) => void;
-}
-
-const CreateBotDialog = ({ onBotCreated }: CreateBotDialogProps) => {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-  const { toast } = useToast();
-
-  const handleCreateBot = async () => {
-    if (!name.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a name for your bot",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!phoneNumber.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a phone number for your bot",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsCreating(true);
-      
-      // Use the correct endpoint to create bot
-      const response = await fetch('http://localhost:3000/api/v1/bots/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          'nama bot': name.trim(),
-          'nomor telpon': phoneNumber.trim(),
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to create bot');
-      }
-      
-      const newBot = await response.json();
-      
-      onBotCreated(newBot);
-      setOpen(false);
-      setName("");
-      setPhoneNumber("");
-      
-      toast({
-        title: "Bot Created",
-        description: `${newBot.name} has been created successfully.`,
-      });
-    } catch (error) {
-      console.error("Error creating bot:", error);
-      toast({
-        title: "Error",
-        description: "Could not create the bot. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-botnexa-500 hover:bg-botnexa-600">
-          <Plus className="mr-2 h-4 w-4" />
-          New Bot
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Create a New Bot</DialogTitle>
-          <DialogDescription>
-            Set up a new messaging bot for your account
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="name">Bot Name</Label>
-            <Input
-              id="name"
-              placeholder="My WhatsApp Bot"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="phoneNumber">Phone Number</Label>
-            <Input
-              id="phoneNumber"
-              placeholder="+1234567890"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Enter the phone number in international format (e.g., +1234567890)
-            </p>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => setOpen(false)}
-            disabled={isCreating}
-          >
-            Cancel
-          </Button>
+      <div className="p-4 md:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-2xl font-bold">WhatsApp Bots</h1>
           <Button 
-            onClick={handleCreateBot} 
-            disabled={isCreating}
+            onClick={() => setIsCreateModalOpen(true)}
             className="bg-botnexa-500 hover:bg-botnexa-600"
           >
-            {isCreating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              "Create Bot"
-            )}
+            <Plus className="mr-2 h-4 w-4" />
+            Create New Bot
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col md:flex-row justify-between gap-4">
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search bots..." 
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              
+              <Tabs defaultValue="all" onValueChange={setSelectedTab} className="w-full md:w-auto">
+                <TabsList className="w-full">
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="active">Active</TabsTrigger>
+                  <TabsTrigger value="inactive">Inactive</TabsTrigger>
+                  <TabsTrigger value="support">Support</TabsTrigger>
+                  <TabsTrigger value="sales">Sales</TabsTrigger>
+                  <TabsTrigger value="scheduler">Scheduler</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </CardHeader>
+          
+          <CardContent>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredBots.length > 0 ? (
+                filteredBots.map((bot) => (
+                  <Card key={bot.id} className="overflow-hidden">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-2">
+                          <div className="h-10 w-10 rounded-md bg-botnexa-100 dark:bg-botnexa-950/30 flex items-center justify-center">
+                            {getBotIcon(bot.type)}
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">{bot.name}</CardTitle>
+                            <CardDescription className="text-xs">
+                              {bot.type.charAt(0).toUpperCase() + bot.type.slice(1)} Bot
+                            </CardDescription>
+                          </div>
+                        </div>
+                        <Badge 
+                          variant={bot.status === 'active' ? 'default' : 'outline'}
+                          className={bot.status === 'active' 
+                            ? 'bg-green-500 hover:bg-green-600'
+                            : 'text-muted-foreground'
+                          }
+                        >
+                          {bot.status}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent className="pb-3">
+                      <p className="text-sm text-muted-foreground line-clamp-2 h-10">
+                        {bot.description}
+                      </p>
+                      <div className="flex justify-between items-center mt-3 text-xs text-muted-foreground">
+                        <div>Created: {new Date(bot.createdAt).toLocaleDateString()}</div>
+                        <div>Phone: {bot.phoneNumber}</div>
+                      </div>
+                    </CardContent>
+                    
+                    <CardFooter className="pt-3 border-t flex justify-between">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditBot(bot)}
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Settings
+                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleEditBot(bot)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleDeleteBot(bot)}
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardFooter>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-10">
+                  <Bot className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-1">No bots found</h3>
+                  <p className="text-muted-foreground">
+                    {searchQuery
+                      ? `No bots match your search "${searchQuery}"`
+                      : 'Try creating a new bot or changing your filters'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Create Bot Modal */}
+      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Bot</DialogTitle>
+            <DialogDescription>
+              Configure a new WhatsApp bot for your business
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-sm font-medium">
+                Bot Name
+              </label>
+              <Input id="name" placeholder="e.g. Customer Support Bot" />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="description" className="text-sm font-medium">
+                Description
+              </label>
+              <Input id="description" placeholder="Describe what this bot does" />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="botType" className="text-sm font-medium">
+                Bot Type
+              </label>
+              <Select>
+                <SelectTrigger id="botType">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="support">Support</SelectItem>
+                  <SelectItem value="sales">Sales</SelectItem>
+                  <SelectItem value="scheduler">Scheduler</SelectItem>
+                  <SelectItem value="faq">FAQ</SelectItem>
+                  <SelectItem value="order">Order Tracking</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="whatsappNumber" className="text-sm font-medium">
+                WhatsApp Number
+              </label>
+              <Input id="whatsappNumber" placeholder="+1234567890" />
+            </div>
+          </div>
+          
+          <DialogFooter className="sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="bg-botnexa-500 hover:bg-botnexa-600"
+              onClick={() => {
+                console.log("Creating new bot");
+                setIsCreateModalOpen(false);
+              }}
+            >
+              Create Bot
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Modal */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Bot</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this bot? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedBot && (
+            <div className="py-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg border">
+                <div className="h-10 w-10 rounded-md bg-botnexa-100 dark:bg-botnexa-950/30 flex items-center justify-center">
+                  {getBotIcon(selectedBot.type)}
+                </div>
+                <div>
+                  <h4 className="font-medium">{selectedBot.name}</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedBot.type.charAt(0).toUpperCase() + selectedBot.type.slice(1)} Bot
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteBot}
+            >
+              Delete Bot
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </DashboardLayout>
   );
 };
 

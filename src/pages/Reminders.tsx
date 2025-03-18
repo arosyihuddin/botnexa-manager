@@ -1,185 +1,262 @@
+
 import { useState, useEffect } from "react";
-import { format, parseISO } from "date-fns";
-import { CheckCircle, XCircle, Calendar, Bell, Clock, Plus } from "lucide-react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar as CalendarIcon, Search, Plus, Check, Clock, ChevronDown, User, Calendar, CalendarCheck, AlertCircle } from "lucide-react";
+import { format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { RemindersService } from "@/services/reminders.service";
 import CreateReminderModal from "@/components/CreateReminderModal";
+import { dummyReminders, dummyContacts } from "@/lib/dummy-data";
+import { RemindersService } from "@/services/reminders.service";
+import { Reminder } from "@/types/app-types";
 
 const Reminders = () => {
-  const [reminders, setReminders] = useState<any[]>([]);
-  const [completedReminders, setCompletedReminders] = useState<any[]>([]);
-  const [upcomingReminders, setUpcomingReminders] = useState<any[]>([]);
-  const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedTab, setSelectedTab] = useState("all");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [reminders, setReminders] = useState<Reminder[]>(dummyReminders);
 
-  useEffect(() => {
-    loadReminders();
-  }, []);
+  // Filter reminders based on search, date and tab
+  const filteredReminders = reminders.filter(reminder => {
+    const matchesSearch = 
+      reminder.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      reminder.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      reminder.contactName.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const reminderDate = new Date(reminder.dueDate);
+    const matchesDate = !selectedDate || 
+      (reminderDate.getDate() === selectedDate.getDate() && 
+       reminderDate.getMonth() === selectedDate.getMonth() && 
+       reminderDate.getFullYear() === selectedDate.getFullYear());
+    
+    if (selectedTab === "all") return matchesSearch && matchesDate;
+    if (selectedTab === "upcoming") return matchesSearch && matchesDate && !reminder.completed;
+    if (selectedTab === "completed") return matchesSearch && matchesDate && reminder.completed;
+    
+    // Filter by priority
+    return matchesSearch && matchesDate && reminder.priority === selectedTab;
+  });
 
-  const loadReminders = async () => {
-    try {
-      const remindersData = await RemindersService.getReminders();
-      setReminders(remindersData);
-    } catch (error) {
-      console.error("Error loading reminders:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load reminders",
-        variant: "destructive",
-      });
+  const markAsCompleted = (reminderId: string) => {
+    const updatedReminders = reminders.map(reminder => 
+      reminder.id === reminderId 
+        ? { ...reminder, completed: true } 
+        : reminder
+    );
+    setReminders(updatedReminders);
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "text-red-600 bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900";
+      case "medium":
+        return "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900";
+      case "low":
+        return "text-green-600 bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900";
+      default:
+        return "";
     }
   };
 
-  useEffect(() => {
-    // Filter reminders into completed and upcoming
-    const now = new Date();
-    const completed = reminders.filter((reminder) => reminder.completed);
-    const upcoming = reminders.filter((reminder) => !reminder.completed && parseISO(reminder.date + 'T' + reminder.time) >= now);
-
-    setCompletedReminders(completed);
-    setUpcomingReminders(upcoming);
-  }, [reminders]);
-
-  const handleCreateReminder = async (newReminder: any) => {
-    try {
-      await RemindersService.createReminder(newReminder);
-      setReminders([...reminders, newReminder]);
-    } catch (error) {
-      console.error("Error creating reminder:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create reminder",
-        variant: "destructive",
-      });
-    }
+  // Function to group reminders by date
+  const groupRemindersByDate = (reminders: Reminder[]) => {
+    const grouped: Record<string, Reminder[]> = {};
+    reminders.forEach(reminder => {
+      const dateKey = format(new Date(reminder.dueDate), "yyyy-MM-dd");
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(reminder);
+    });
+    return grouped;
   };
 
-  const handleUpdateReminder = async (reminderId: string, updatedFields: any) => {
-    try {
-      await RemindersService.updateReminder(reminderId, updatedFields);
-      setReminders(reminders.map(reminder =>
-        reminder.id === reminderId ? { ...reminder, ...updatedFields } : reminder
-      ));
-    } catch (error) {
-      console.error("Error updating reminder:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update reminder",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteReminder = async (reminderId: string) => {
-    try {
-      await RemindersService.deleteReminder(reminderId);
-      setReminders(reminders.filter(reminder => reminder.id !== reminderId));
-    } catch (error) {
-      console.error("Error deleting reminder:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete reminder",
-        variant: "destructive",
-      });
-    }
+  const groupedReminders = groupRemindersByDate(filteredReminders);
+  const sortedDateKeys = Object.keys(groupedReminders).sort();
+  
+  const handleCreateReminder = (newReminder: Partial<Reminder>) => {
+    const reminder = {
+      ...newReminder,
+      id: `temp-${Date.now()}`,
+      completed: false
+    } as Reminder;
+    
+    setReminders([...reminders, reminder]);
+    setIsCreateModalOpen(false);
   };
 
   return (
     <DashboardLayout title="Reminders">
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">Manage Reminders</h1>
-            <p className="text-muted-foreground">Create and manage your scheduled reminders.</p>
-          </div>
-          <CreateReminderModal onCreateReminder={handleCreateReminder} />
+      <div className="p-4 md:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-2xl font-bold">Reminders & Tasks</h1>
+          <Button 
+            onClick={() => setIsCreateModalOpen(true)} 
+            className="bg-botnexa-500 hover:bg-botnexa-600"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Reminder
+          </Button>
         </div>
-        
-        <Tabs defaultValue="upcoming" className="w-full">
-          <TabsList>
-            <TabsTrigger value="upcoming">Upcoming <Badge variant="secondary">{upcomingReminders.length}</Badge></TabsTrigger>
-            <TabsTrigger value="completed">Completed <Badge variant="secondary">{completedReminders.length}</Badge></TabsTrigger>
-          </TabsList>
-          <TabsContent value="upcoming">
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-              {upcomingReminders.length > 0 ? (
-                upcomingReminders.map((reminder) => (
-                  <Card key={reminder.id}>
-                    <CardHeader>
-                      <CardTitle>{reminder.title}</CardTitle>
-                      <CardDescription>{reminder.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-2">
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>{format(parseISO(reminder.date), "PPP")}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{reminder.time}</span>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="flex justify-between items-center">
-                      <Button variant="outline" size="sm" onClick={() => handleUpdateReminder(reminder.id, { completed: true })}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Mark Complete
-                      </Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteReminder(reminder.id)}>
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))
-              ) : (
-                <div className="col-span-full text-center">
-                  <Bell className="mx-auto h-6 w-6 text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">No upcoming reminders.</p>
+
+        <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+          {/* Sidebar with Calendar and Filters */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Select Date</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  className="border rounded-md"
+                />
+              </CardContent>
+              <CardFooter className="border-t pt-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setSelectedDate(new Date())}
+                >
+                  <CalendarCheck className="mr-2 h-4 w-4" />
+                  Today
+                </Button>
+              </CardFooter>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Filter Reminders</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Tabs defaultValue="all" onValueChange={setSelectedTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                  </TabsList>
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="high" className="text-red-600">High</TabsTrigger>
+                    <TabsTrigger value="medium" className="text-amber-600">Medium</TabsTrigger>
+                    <TabsTrigger value="low" className="text-green-600">Low</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search reminders..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-              )}
-            </div>
-          </TabsContent>
-          <TabsContent value="completed">
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-              {completedReminders.length > 0 ? (
-                completedReminders.map((reminder) => (
-                  <Card key={reminder.id}>
-                    <CardHeader>
-                      <CardTitle>{reminder.title}</CardTitle>
-                      <CardDescription>{reminder.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-2">
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>{format(parseISO(reminder.date), "PPP")}</span>
+              </CardHeader>
+              
+              <CardContent>
+                {sortedDateKeys.length === 0 ? (
+                  <div className="text-center py-12">
+                    <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-1">No reminders found</h3>
+                    <p className="text-muted-foreground max-w-sm mx-auto">
+                      {searchQuery 
+                        ? `No reminders match your search "${searchQuery}"` 
+                        : "You don't have any reminders for the selected period"}
+                    </p>
+                  </div>
+                ) : (
+                  sortedDateKeys.map(dateKey => (
+                    <div key={dateKey} className="mb-6 last:mb-0">
+                      <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {format(new Date(dateKey), "EEEE, MMMM d, yyyy")}
+                      </h3>
+                      
+                      <div className="space-y-3">
+                        {groupedReminders[dateKey].map(reminder => (
+                          <div 
+                            key={reminder.id}
+                            className={`p-4 border rounded-lg flex items-start gap-3 hover:bg-accent/50 transition-colors ${
+                              reminder.completed ? "bg-muted/50" : ""
+                            }`}
+                          >
+                            <Button 
+                              variant="outline"
+                              size="icon"
+                              className={`h-6 w-6 rounded-full shrink-0 ${
+                                reminder.completed 
+                                ? "bg-green-500 text-white border-green-500 hover:bg-green-600 hover:text-white" 
+                                : ""
+                              }`}
+                              onClick={() => markAsCompleted(reminder.id)}
+                            >
+                              {reminder.completed && <Check className="h-3 w-3" />}
+                            </Button>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <h4 className={`font-medium ${reminder.completed ? "line-through text-muted-foreground" : ""}`}>
+                                  {reminder.title}
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${getPriorityColor(reminder.priority)}`}
+                                  >
+                                    {reminder.priority.charAt(0).toUpperCase() + reminder.priority.slice(1)} Priority
+                                  </Badge>
+                                  
+                                  <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {format(new Date(reminder.dueDate), "h:mm a")}
+                                  </Badge>
+                                </div>
+                              </div>
+                              
+                              <p className={`text-sm mt-1 ${reminder.completed ? "text-muted-foreground line-through" : "text-muted-foreground"}`}>
+                                {reminder.description}
+                              </p>
+                              
+                              <div className="flex items-center mt-2 text-xs">
+                                <Badge variant="outline" className="text-xs bg-botnexa-50 text-botnexa-700 dark:bg-botnexa-950/20 dark:text-botnexa-400 border-botnexa-200 dark:border-botnexa-900 flex items-center gap-1">
+                                  <User className="h-3 w-3" />
+                                  {reminder.contactName}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{reminder.time}</span>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="flex justify-end">
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteReminder(reminder.id)}>
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))
-              ) : (
-                <div className="col-span-full text-center">
-                  <CheckCircle className="mx-auto h-6 w-6 text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">No completed reminders.</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
+      
+      <CreateReminderModal 
+        open={isCreateModalOpen} 
+        onOpenChange={setIsCreateModalOpen} 
+        contacts={dummyContacts}
+        onCreateReminder={handleCreateReminder}
+      />
     </DashboardLayout>
   );
 };
