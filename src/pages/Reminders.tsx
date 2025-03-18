@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ReminderService } from "@/services/reminders.service";
+import { RemindersService } from "@/services/reminders.service";
 import CreateReminderModal from "@/components/CreateReminderModal";
 
 const Reminders = () => {
@@ -22,7 +22,7 @@ const Reminders = () => {
 
   const loadReminders = async () => {
     try {
-      const remindersData = await ReminderService.getReminders();
+      const remindersData = await RemindersService.getReminders();
       setReminders(remindersData);
     } catch (error) {
       console.error("Error loading reminders:", error);
@@ -46,7 +46,7 @@ const Reminders = () => {
 
   const handleCreateReminder = async (newReminder: any) => {
     try {
-      await ReminderService.createReminder(newReminder);
+      await RemindersService.createReminder(newReminder);
       setReminders([...reminders, newReminder]);
     } catch (error) {
       console.error("Error creating reminder:", error);
@@ -60,7 +60,7 @@ const Reminders = () => {
 
   const handleUpdateReminder = async (reminderId: string, updatedFields: any) => {
     try {
-      await ReminderService.updateReminder(reminderId, updatedFields);
+      await RemindersService.updateReminder(reminderId, updatedFields);
       setReminders(reminders.map(reminder =>
         reminder.id === reminderId ? { ...reminder, ...updatedFields } : reminder
       ));
@@ -76,7 +76,7 @@ const Reminders = () => {
 
   const handleDeleteReminder = async (reminderId: string) => {
     try {
-      await ReminderService.deleteReminder(reminderId);
+      await RemindersService.deleteReminder(reminderId);
       setReminders(reminders.filter(reminder => reminder.id !== reminderId));
     } catch (error) {
       console.error("Error deleting reminder:", error);
